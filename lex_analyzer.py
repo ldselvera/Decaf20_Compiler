@@ -48,75 +48,82 @@ q_n = [[1, 2, 1, 7, 9, 14, 16, 18, 20, 22, 24, 13, 26, 27, 28, 29, 30, 31, 32, 3
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '}']]
 
 
+def get_token(current_string, previous_state):
+    if current_string:
+        #Get the token of finished FSM
+        token = df["Token"][previous_state]
+
+    if token is 'T_Identifier':
+        #Check if identifier is a reserved word
+        if current_string in reserved :
+            token = reserved[current_string]
+    elif token in operators:
+        #Enclose operator in '' as shown in examples
+        token = "'" + token + "'"
+    elif token == 'T_IntConstant (value = %d)':    
+        token = token % (int(current_string)) 
+    elif token == "T_DoubleConstant (value = %g)":
+        #Use holdplacer %g to show double withouth trailing 0
+        token = token % (float(current_string))
+    elif token == 'T_StringConstant (value = %s)':
+        token = token % (current_string)
+    return token
+
+def get_char(ch, previous_state):
+        #Handle doubles with e or E
+        if (ch == 'e' or ch == 'E') and (previous_state == 6 or previous_state == 3):
+            ch ='E'
+        elif ch.isalpha(): 
+            ch= 'a'
+        elif ch.isdigit():
+            ch = '0'
+
+        return ch
+    
 def scanner(filename):
     current_state  = 0
     ch = ''        #Hold current character
     current_string = ""     #Hold current string being parsed
     token = ""     #The final identified token of the string
-    
+
+    encoding = 'utf-8'    
     myfile = open("out.txt", "w")
     
     line_count = 0
     col_count = 0
     
-    with open(filename) as f:
-      while True:
-        ch = f.read(1)
-        
-        if not ch: return 0
-        
-        if ch == '\n':
-            line_count += 1
-        #Save previous state for backspace    
-        previous_state = current_state
-
-        #Handle doubles with e or E
-        if (ch == 'e' or ch == 'E') and (previous_state == 6 or previous_state == 3):
-            current_state = df['E'][current_state]
-        elif ch.isalpha(): 
-            current_state  = df['a'][current_state ]
-        elif ch.isdigit():
-            current_state  = df['0'][current_state ]
-        #Anything is allowed inside the string
-        elif current_state == 7 and ch != '"':
-            current_state = 7
-        else:
-            current_state  = df[ch][current_state ]
+    with open(filename, 'rb') as f:
+        while True:
+            ch = f.read(1)
+            previous_state = current_state                
+            ch = str(ch, encoding)
+            fsm_ch = get_char(ch, previous_state)
             
-        #If have reached the end of current FSM
-        if current_state  == 0:
-            if current_string:
-                #Get the token of finished FSM
-                token = df["Token"][previous_state]
-                
-                if token is 'T_Identifier':
-                    #Check if identifier is a reserved word
-                    if current_string in reserved :
-                        token = reserved[current_string]
-                elif token in operators:
-                    #Enclose operator in '' as shown in examples
-                    token = "'" + token + "'"
-                elif token == 'T_IntConstant (value = %d)':    
-                    token = token % (int(current_string)) 
-                elif token == "T_DoubleConstant (value = %g)":
-                    #Use holdplacer %g to show double withouth trailing 0
-                    token = token % (float(current_string))
-                elif token == 'T_StringConstant (value = %s)':
-                    token = token % (current_string)
-                    
-                line =  ' line %s cols %s-%s is %s\n' % ( str(line_count), str(1), str(col_count), token)
-                
-                myfile.write(f"{current_string:<12}{line:>10}")
-                
-                #Reset current string and column count
-                current_string = ''
-                col_count = 0
-        else:
-            #Keep adding to current string
-            current_string += ch
-            col_count += 1
-    myfile.close()
-    
+            if ch == '\n': line_count += 1
+            if not ch: return 0
+
+            #Anything allowed withing string quotations
+            if current_state == 7 and ch != '"':
+                current_state = 7
+            else:
+                current_state  = df[fsm_ch][current_state ]
+
+            #If have reached the end of current FSM
+            if current_state == 0:
+                if current_string:
+                    token = get_token(current_string, previous_state)
+                    line =  ' line %s cols %s-%s is %s\n' % ( str(line_count), str(1), str(col_count), token)
+                    myfile.write(f"{current_string:<12}{line:>10}")
+
+                    #Reset current string and column count
+                    current_string = ''
+                    col_count = 0
+            else:
+                #Keep adding to current string
+                current_string += ch
+                col_count += 1
+        myfile.close()
+        
 df = pd.DataFrame(data = q_n, columns = operators)
 filename = 'samples/string.frag'
 scanner(filename)
