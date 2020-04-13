@@ -27,6 +27,8 @@ class ProgramNode:
             while (pos + 1) < len(tokens):
                 declNode = DeclNode()
                 self.decls.append(declNode.decl())                                                
+        
+        print(self.decls)
 
         return self.decls
 
@@ -124,8 +126,14 @@ class DeclNode:
 
         var['line'] = re.findall(r"line \d+",lines[pos])[0].split()[-1]
         var['Type'] = re.findall(r"int|double|string|bool|void", lines[pos].split()[0])[0]
-        pos += 1
-        var['Identifier'] = lines[pos].split()[0]
+
+        if tokens[pos+1] == 'T_Identifier':
+            pos += 1
+            var['Identifier'] = lines[pos].split()[0]
+        else:
+            print("here")
+            print('reportSyntaxErr(nextToken)')   
+            return    
 
         return var
     
@@ -136,6 +144,7 @@ class DeclNode:
         pos += 1
 
         if tokens[pos + 1] == ')':
+            pos += 1
             return formals
         
         formals.append(self.variable())        
@@ -144,7 +153,11 @@ class DeclNode:
             formals.append(self.variable()) 
         
         #Consume )
-        pos += 1         
+        if tokens[pos + 1] == ')':
+            pos += 1   
+        else:
+           print('reportSyntaxErr(nextToken)')   
+           return               
 
         return formals
 
@@ -174,7 +187,12 @@ class StatementNode:
 
         while tokens[pos + 1] != '}':  
             self.variablestmt.append(self.stmt())
-            pos += 1         
+
+        #redundant?
+        if tokens[pos+1] == '}':
+            pos += 1
+        else:
+            print('reportSyntaxErr(nextNextToken)')                
 
         return self.variablestmt
     
@@ -202,16 +220,8 @@ class StatementNode:
                 return
         elif tokens[pos + 1] == 'T_Print':
             pos += 1
-            if tokens[pos] == '(':
-                pos += 1
+            if tokens[pos + 1] == '(':
                 stmt['PrintStmt'] = self.printStmt()
-                pos += 1
-        
-                if tokens[pos] == ';':
-                    return stmt
-                else:
-                    print('reportSyntaxErr(nextNextToken)')
-                    return
             else:
                 print('reportSyntaxErr(nextNextToken)')
                 return
@@ -227,12 +237,22 @@ class StatementNode:
     
     def printStmt(self):
         global tokens, pos, lines 
-        
+        #consume (
+        pos += 1
         exprs = []
-        while tokens[pos] != ')':
+
+        while tokens[pos + 1] != ')':
             exprNode = ExpressionNode()
             exprs.append(exprNode.expBlock())
+        
+        if tokens[pos + 1] == ')':
             pos += 1
+            if tokens[pos + 1] == ';':
+                pos += 1
+            else:
+                print('reportSyntaxErr(nextNextToken)')
+        else:
+            print('reportSyntaxErr(nextNextToken)')
         
         return exprs
     
@@ -245,42 +265,52 @@ class ExpressionNode:
         
         expr = {} 
 
-        
         if tokens[pos + 1]:
             if tokens[pos + 1] == '(':  
-                expr = self.parenthesis()
+                #expr = self.parenthesis()
+                expr = "self.parenthesis()"
             elif re.match(r"\*|\/|\%",tokens[pos + 2]):
-                expr['ArithmeticExpr'] = self.multiplication()
+                #expr['ArithmeticExpr'] = self.multiplication()
+                expr['ArithmeticExpr'] = "mult"
             elif re.match(r"\+|\-",tokens[pos + 2]):                
-                print("going to add",lines[pos])
-                print(lines[pos+1])
-                expr['ArithmeticExpr'] = self.addition()
+                #expr['ArithmeticExpr'] = self.addition()
+                expr['ArithmeticExpr'] = "add"
             elif re.match(r"\<|\>|T_LessEqual|T_GreaterEqual", tokens[pos + 2]):
-                expr['Relational'] = self.relational()
+                #expr['Relational'] = self.relational()
+                expr['Relational'] = "relational"
             elif re.match(r"T_Equal|T_NotEqual", tokens[pos + 2]):
-                expr['EqualityExpr'] = self.equality()
+                #expr['EqualityExpr'] = self.equality()
+                expr['EqualityExpr'] = "equality"
             elif tokens[pos + 2] == 'T_And':
-                expr['LogicalExpr'] = self.logicAnd()
+                #expr['LogicalExpr'] = self.logicAnd()
+                expr['LogicalExpr'] = "and"
             elif tokens[pos + 2] == 'T_Or':
-                expr['Comparison'] = self.logicOr()
+                #expr['Comparison'] = self.logicOr()
+                expr['Comparison'] = "mult"
             elif tokens[pos + 2] == '=':
-                expr['AssignExpr'] = self.assign()        
+                #expr['AssignExpr'] = self.assign()
+                expr['AssignExpr'] = "assign"        
             elif tokens[pos + 1] == 'T_Identifier':
                 if tokens[pos + 2] == '(':
-                    call = {}
-                    calls = []
-                    call['Identifier'] = lines[pos+1].split()[0]
-                    pos += 1
-                    calls.append(call)
-                    calls.append( self.call())
-                    expr['Call'] = calls
+                    # call = {}
+                    # calls = []
+                    # call['Identifier'] = lines[pos+1].split()[0]
+                    # pos += 1
+                    # calls.append(call)
+                    # calls.append( self.call())
+                    #expr['Call'] = calls
+                    expr['Call'] = "calls"
                 else:
-                    expr['LValue'] = lines[pos + 1].split()[0]
+                    #expr['LValue'] = lines[pos + 1].split()[0]
+                    expr['LValue'] = "lvalue"
             elif re.match(r"\-|\!",tokens[pos + 1]):
-                expr['Urinary'] = self.urinary()
+                #expr['Urinary'] = self.urinary()
+                expr['Urinary'] = "urinary"
             elif re.match(r"T_IntConstant|T_DoubleConstant|T_StringConstant|T_StringConstant|T_BoolConstant", tokens[pos + 1]):
+                #consume constant token
+                pos += 1
                 name = tokens[pos].split('_')[1]
-                if tokens[pos + 1] == 'T_StringConstant':
+                if tokens[pos] == 'T_StringConstant':
                     expr[name] = '"' + lines[pos].split('"')[1] + '"'
                 else:
                     expr[name] = lines[pos].split()[0]
@@ -361,8 +391,6 @@ class ExpressionNode:
         fields = []
         idents = []   
 
-        print("inside to add",lines[pos])
-        print(lines[pos+1])
         expr = self.multiplication()
         pos += 1
         
