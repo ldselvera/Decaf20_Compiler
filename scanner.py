@@ -1,4 +1,4 @@
-import pandas as pd
+import numpy as np
 import os
 
 reserved = {'void': 'T_Void', 'int': 'T_Int', 'double': 'T_Double','true': 'T_BoolConstant (value = true)', 'false': 'T_BoolConstant (value = false)',
@@ -8,7 +8,8 @@ reserved = {'void': 'T_Void', 'int': 'T_Int', 'double': 'T_Double','true': 'T_Bo
 
 operators = ['a', '1', 'E', '"', '/', '<', '>', '!', '=', '&', '|', '.', '+', '-', '*', '%', ';', ',', '(', ')', '{', '}', '_', '\n', ' ', '0', 'X', 'F', 'na', 'Token']
 
-q_n = [[1, 2, 1, 7, 9, 14, 16, 18, 20, 22, 24, 36, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, -1, 0, 0, 37, 1, 1, -2, ''],
+df = np.array([['a', '1', 'E', '"', '/', '<', '>', '!', '=', '&', '|', '.', '+', '-', '*', '%', ';', ',', '(', ')', '{', '}', '_', '\n', ' ', '0', 'X', 'F', 'na', 'Token'],
+        [1, 2, 1, 7, 9, 14, 16, 18, 20, 22, 24, 36, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, -1, 0, 0, 37, 1, 1, -2, ''],
         [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, -2, 'T_Identifier'],
         [0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, -2, 'T_IntConstant (value = %d)'],
         [0, 6, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, -2, 'T_DoubleConstant (value = %g)'],
@@ -27,7 +28,7 @@ q_n = [[1, 2, 1, 7, 9, 14, 16, 18, 20, 22, 24, 36, 26, 27, 28, 29, 30, 31, 32, 3
         [0, 0, 0, 0, 0, 0, 0, 0, 17, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2, '>'],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2, 'T_GreaterEqual'],
         [0, 0, 0, 0, 0, 0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2, '!'],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2, '!='],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2, 'T_NotEqual'],
         [0, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2, '='],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2, 'T_Equal'],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 23, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2, ''],
@@ -48,9 +49,9 @@ q_n = [[1, 2, 1, 7, 9, 14, 16, 18, 20, 22, 24, 36, 26, 27, 28, 29, 30, 31, 32, 3
         [0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 38, 0, -2, 'T_IntConstant (value = %d)'],
         [40, 39, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 39, 40, 39, -2, ''],
         [0, 39, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 39, 0, 39, -2, 'T_HexConstant (value = %d)'],
-        [0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, -2, '']]
+        [0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, -2, '']])
 
-df = pd.DataFrame(data = q_n, columns = operators)
+df = df.transpose()
 current_state  = 0
 next_fsm = 0
 line_count = 1
@@ -91,8 +92,8 @@ def scanner(input_dir):
 
             current_state = next_state(current_state, fsm_ch)
             if current_state == -2:
-                print(f"\n*** Error line " + str(line_count) + ".")
-                print(f"*** Unrecognized char: '" + ch + "'\n")
+                print("\n*** Error line " + str(line_count) + ".")
+                print("*** Unrecognized char: '" + ch + "'\n")
                 reset()
                 col_start = 1
                 col_end = 1
@@ -117,15 +118,15 @@ def scanner(input_dir):
                     col_start = col_end
             elif next_fsm == -1:
                 current_string += ch
-                print(f"\n*** Error line " + str(line_count) + ".")
-                print(f"*** Unterminated string constant: " + current_string + '\n')
+                print("\n*** Error line " + str(line_count) + ".")
+                print("*** Unterminated string constant: " + current_string + '\n')
                 reset()
                 col_start = 1
                 col_end = 1
                 continue
             elif next_fsm == -3:
-                print(f"\n*** Error line " + str(line_count) + ".")
-                print(f"*** Unrecognized char: '" + ch + "'\n")
+                print("\n*** Error line " + str(line_count) + ".")
+                print("*** Unrecognized char: '" + ch + "'\n")
                 reset()
                 col_start = 1
                 col_end = 1
@@ -147,7 +148,9 @@ def scanner(input_dir):
 
 def get_token( current_string, current_state):
     if current_string:
-        token = df["Token"][current_state]
+        itemindex = np.where(df[:,0]=='Token')
+        token = df[itemindex[0][0]][current_state + 1]
+        #token = df["Token"][current_state]
 
     if token == 'T_Identifier':
         #Check if identifier is a reserved word
@@ -212,17 +215,22 @@ def lookahead(f, fsm_ch, encoding):
     return next_fsm
 
 def write_token(current_string, line_count, col_start, col_end, current_state):
+    fmt = '{:<12} {:<10}'
     token = get_token(current_string, current_state)
     if token != 'comment':
         if token == 'T_Identifier' and len(current_string) > 31:
-            print(f"\n*** Error line " + str(line_count) + ".")
-            print(f"*** Identifier too long: " + '"' + current_string + '"\n')
+            print("\n*** Error line " + str(line_count) + ".")
+            print("*** Identifier too long: " + '"' + current_string + '"\n')
             truncated_string = current_string[:31]
-            line =  ' line %s cols %s-%s is %s (truncated to %s)' % ( str(line_count), str(col_start), str(col_end), token, truncated_string)
-            print(f"{current_string:<12}{line:>10}")
+            #line =  ' line %s cols %s-%s is %s (truncated to %s)' % ( str(line_count), str(col_start), str(col_end), token, truncated_string)
+            line =  " line " + str(line_count) +  " cols " + str(col_start) + "-" + str(col_end) + " is " + token + " (truncated to " + truncated_string + ")"            
+            print(fmt.format(current_string, line))
+            #print(f"{current_string:<12}{line:>10}")
         else:
-            line =  ' line %s cols %s-%s is %s' % ( str(line_count), str(col_start), str(col_end), token)
-            print(f"{current_string:<12}{line:>10}")
+            #line =  ' line %s cols %s-%s is %s' % ( str(line_count), str(col_start), str(col_end), token)
+            line =  " line " + str(line_count) +  " cols " + str(col_start) + "-" + str(col_end) + " is " + token
+            print(fmt.format(current_string, line))
+            #print(f"{current_string:<12}{line:>10}")
 
 def next_state(current_state, ch):
     #Anything allowed withing string quotations
@@ -231,7 +239,9 @@ def next_state(current_state, ch):
     elif current_state == 11 and ch != '/':
         current_state = 11
     elif ch in reserved or ch in operators:
-        current_state  = df[ch][current_state]
+        itemindex = np.where(df[:,0]== ch)
+        current_state = int(df[itemindex[0][0]][current_state + 1])
+        #current_state  = df[ch][current_state]
     else:
         current_state = -2
     return current_state

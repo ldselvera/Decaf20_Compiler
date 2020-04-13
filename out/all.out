@@ -1,0 +1,158 @@
+TRUE          line 1 cols 1-4 is T_Identifier
+FALSE         line 3 cols 1-5 is T_Identifier
+True          line 5 cols 1-4 is T_Identifier
+False         line 7 cols 1-5 is T_Identifier
+.             line 10 cols 1-1 is '.'
+12            line 10 cols 2-3 is T_IntConstant (value = 12)
+.             line 12 cols 1-1 is '.'
+12            line 12 cols 2-3 is T_IntConstant (value = 12)
+E             line 12 cols 4-4 is T_Identifier
++             line 12 cols 5-5 is '+'
+2             line 12 cols 6-6 is T_IntConstant (value = 2)
+1.12          line 14 cols 1-4 is T_DoubleConstant (value = 1.12)
+E             line 14 cols 5-5 is T_Identifier
++             line 14 cols 6-6 is '+'
+-             line 14 cols 7-7 is '-'
+2             line 14 cols 8-8 is T_IntConstant (value = 2)
+vari          line 14 cols 9-12 is T_Identifier
+.             line 14 cols 13-13 is '.'
+able          line 14 cols 14-17 is T_Identifier
+3             line 15 cols 1-1 is T_IntConstant (value = 3)
+variable      line 15 cols 2-9 is T_Identifier
+variable      line 16 cols 1-8 is T_Identifier
+/             line 16 cols 9-9 is '/'
+123           line 16 cols 10-12 is T_IntConstant (value = 123)
+var           line 17 cols 1-3 is T_Identifier
+-             line 17 cols 4-4 is '-'
+123           line 17 cols 5-7 is T_IntConstant (value = 123)
+
+*** Error line 18.
+*** Identifier too long: "variable_whose_name_is_much_too_long"
+
+variable_whose_name_is_much_too_long  line 18 cols 1-36 is T_Identifier (truncated to variable_whose_name_is_much_too)
+0             line 19 cols 1-1 is T_IntConstant (value = 0)
+x             line 19 cols 2-2 is T_Identifier
+Ox12          line 21 cols 1-4 is T_Identifier
+0             line 23 cols 1-1 is T_IntConstant (value = 0)
+xg            line 23 cols 2-3 is T_Identifier
+=             line 28 cols 1-1 is '='
+!             line 28 cols 2-2 is '!'
+
+*** Error line 29.
+*** Unrecognized char: '$'
+
+
+*** Error line 30.
+*** Unrecognized char: '@'
+
+
+*** Error line 31.
+*** Unrecognized char: '$'
+
+
+*** Error line 32.
+*** Unrecognized char: '^'
+
+
+*** Error line 33.
+*** Unrecognized char: '&'
+
+
+*** Error line 34.
+*** Unrecognized char: '~'
+
+
+*** Error line 35.
+*** Unrecognized char: '`'
+
+
+*** Error line 36.
+*** Unrecognized char: '?'
+
+voidB         line 38 cols 1-5 is T_Identifier
+classs        line 40 cols 1-6 is T_Identifier
+newarray      line 42 cols 1-8 is T_Identifier
+newArray      line 44 cols 1-8 is T_Identifier
+Newarray      line 46 cols 1-8 is T_Identifier
+protected     line 48 cols 1-9 is T_Identifier
+float         line 50 cols 1-5 is T_Identifier
+char          line 52 cols 1-4 is T_Identifier
+short         line 54 cols 1-5 is T_Identifier
+PrintString   line 56 cols 1-11 is T_Identifier
+
+*** Error line 60.
+*** Unterminated string constant: "this is not a
+
+valid         line 61 cols 2-6 is T_Identifier
+string        line 61 cols 8-13 is T_String
+constant      line 61 cols 15-22 is T_Identifier
+
+*** Error line 61.
+*** Unterminated string constant: "
+
+"this is okay, though"  line 63 cols 1-22 is T_StringConstant (value = "this is okay, though")
+"all done!"   line 80 cols 1-11 is T_StringConstant (value = "all done!")
+variable0     line 81 cols 1-9 is T_Identifier
+Var1          line 83 cols 1-4 is T_Identifier
+VAR_2         line 85 cols 1-5 is T_Identifier
+variable_of_many_words_143  line 87 cols 1-26 is T_Identifier
+vAr4_0987654321  line 89 cols 1-15 is T_Identifier
+var5___       line 91 cols 1-7 is T_Identifier
+variable0     line 93 cols 1-9 is T_Identifier
+variable0     line 95 cols 1-9 is T_Identifier
+Var1          line 97 cols 1-4 is T_Identifier
+1             line 99 cols 1-1 is T_IntConstant (value = 1)
+0             line 101 cols 1-1 is T_IntConstant (value = 0)
+001           line 103 cols 1-3 is T_IntConstant (value = 1)
+123456789     line 105 cols 1-9 is T_IntConstant (value = 123456789)
+9991123       line 107 cols 1-7 is T_IntConstant (value = 9991123)
+0.12          line 109 cols 1-4 is T_DoubleConstant (value = 0.12)
+2.12          line 111 cols 1-4 is T_DoubleConstant (value = 2.12)
+12.2E+2       line 113 cols 1-7 is T_DoubleConstant (value = 1220)
+12.E+2        line 115 cols 1-6 is T_DoubleConstant (value = 1200)
+12.E+002      line 117 cols 1-8 is T_DoubleConstant (value = 1200)
+void          line 120 cols 1-4 is T_Void
+int           line 121 cols 1-3 is T_Int
+double        line 122 cols 1-6 is T_Double
+string        line 123 cols 1-6 is T_String
+while         line 124 cols 1-5 is T_While
+if            line 125 cols 1-2 is T_If
+else          line 126 cols 1-4 is T_Else
+return        line 127 cols 1-6 is T_Return
+break         line 128 cols 1-5 is T_Break
+true          line 129 cols 1-4 is T_BoolConstant (value = true)
+false         line 130 cols 1-5 is T_BoolConstant (value = false)
++             line 131 cols 1-1 is '+'
+-             line 132 cols 1-1 is '-'
+*             line 133 cols 1-1 is '*'
+/             line 134 cols 1-1 is '/'
+<             line 135 cols 1-1 is '<'
+>             line 136 cols 1-1 is '>'
+=             line 137 cols 1-1 is '='
+;             line 138 cols 1-1 is ';'
+,             line 139 cols 1-1 is ','
+!             line 140 cols 1-1 is '!'
+{             line 141 cols 1-1 is '{'
+}             line 142 cols 1-1 is '}'
+(             line 143 cols 1-1 is '('
+)             line 144 cols 1-1 is ')'
+||            line 145 cols 1-2 is T_Or
+<=            line 146 cols 1-2 is T_LessEqual
+>=            line 147 cols 1-2 is T_GreaterEqual
+==            line 148 cols 1-2 is T_Equal
+"valid"       line 154 cols 1-7 is T_StringConstant (value = "valid")
+""            line 156 cols 1-2 is T_StringConstant (value = "")
+" "           line 158 cols 1-3 is T_StringConstant (value = " ")
+"white space can exist in strings"  line 160 cols 1-34 is T_StringConstant (value = "white space can exist in strings")
+"more"        line 162 cols 1-6 is T_StringConstant (value = "more")
+"than"        line 162 cols 8-13 is T_StringConstant (value = "than")
+"one"         line 162 cols 15-19 is T_StringConstant (value = "one")
+"string"      line 162 cols 21-28 is T_StringConstant (value = "string")
+"per"         line 162 cols 30-34 is T_StringConstant (value = "per")
+"line"        line 162 cols 36-41 is T_StringConstant (value = "line")
+"even"        line 164 cols 1-6 is T_StringConstant (value = "even")
+"strings"     line 164 cols 7-15 is T_StringConstant (value = "strings")
+"next"        line 164 cols 16-21 is T_StringConstant (value = "next")
+"to"          line 164 cols 22-25 is T_StringConstant (value = "to")
+"strings"     line 164 cols 26-34 is T_StringConstant (value = "strings")
+"@ can exist in strings"  line 166 cols 1-24 is T_StringConstant (value = "@ can exist in strings")

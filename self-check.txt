@@ -1,0 +1,47 @@
+#!/bin/bash
+# Place this script in workdir for self-checking
+#
+# Take two parameters:
+#		the source code file path
+#		the solution file path
+# 
+# For example: 
+#		bash self-check.txt /yourpath/source.frag /yourpath/solution.out
+
+project_dir="workdir"
+current_dir=`basename "$PWD"`
+build_f="build.sh"
+exec_f="exec.sh"
+temp="temp.out"
+diff_out="temp.diff"
+
+if [[ "$current_dir" != "$project_dir" ]]; then
+	echo "Your currect directory is '$current_dir' ."
+	echo "Please place this script in your '$project_dir' !"
+else
+	if [[ ! -e $build_f ]]; then
+		echo "'$build_f' not found!"
+	else
+		bash $build_f
+	fi
+		
+	if [[ ! -e $exec_f ]]; then
+		echo "exec_f not found!"
+	elif [[ ! -e "$1" ]]; then
+		echo "Cannot find your source code file in '$1' !"
+	elif [[ ! -e "$2" ]]; then
+		echo "Cannot find your solution file in '$2' !"
+	else
+		bash $exec_f $1 > $temp
+		echo "Your output already redirected into '$temp' file in your workdir."
+		echo "Running 'diff -w --ignore-blank-lines' for outputs..."
+		diff -wy --ignore-blank-lines "$2" "$temp" >& $diff_out
+		if [[ $? -eq 0 ]]; then # correct
+			echo "Your code PASS the self-check! Note: This script only be used for self-diagnosis. It does NOT guarantee that your code would get full grade. Please check the documents for details."
+		else
+			echo "Your output may have some differences from the solution by using diff command! Please check the '$diff_out' in your workdir for details."
+		fi
+		
+	fi
+fi
+	
