@@ -5,3 +5,8 @@ original_scanner2.py
 samples2/.simple.decaf.swp
 samples2/.simple.out.swp
 simple.outclear
+.ipynb_checkpoints
+Untitled.ipynb
+functions2.decaf
+samples/.ipynb_checkpoints/
+simple.out

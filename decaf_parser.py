@@ -9,14 +9,12 @@ tabs = 1
 class ProgramNode:
 
     def __init__(self):
+        self.programNode = None
         self.decls = None
-        
-    def check(self):
-        global tokens
-        print(tokens)
         
     def program(self):
         global tokens, pos
+        self.programNode = {}
         self.decls = []
         
         if not tokens:
@@ -25,10 +23,11 @@ class ProgramNode:
         else:
             #Keep adding decl to the program
             while (pos + 1) < len(tokens):
-                declNode = DeclNode()
-                self.decls.append(declNode.decl())                                                
+                self.decls.append(DeclNode().decl())
         
-        print(self.decls)
+        self.programNode['Program'] = self.decls
+
+        self.print_data(self.programNode)
 
         return self.decls
 
@@ -47,10 +46,24 @@ class ProgramNode:
             #Remove extra ' on tokens
             tokens = [token.replace("'", '') for token in tokens]
             f.close() 
-    
-    
+            
+    def print_data(self, prog):
+        print(prog)
+        # for k, v in prog.items():
+        #     print(k)
+        #     if isinstance(v, list):
+        #         for item in v:
+        #             self.print_data(item)
+        #     if isinstance(v, dict):
+        #         self.print_data(v)
+        #     else:
+        #         if not isinstance(v, list):
+        #             print(v)
+
 class DeclNode:
     def __init__(self):
+        self.fnDecl = None
+        self.varDecl = None
         self.variabledecl = None
         self.variablefunct = None
 
@@ -63,6 +76,7 @@ class DeclNode:
                 if tokens[pos + 3] == '(':
                     #Function declaration
                     self.variablefunct = {}
+                    self.variablefunct['line'] = re.findall(r"line \d+",lines[pos + 1])[0].split()[-1]
                     self.variablefunct['FnDecl'] = self.functionDecl()
                     return self.variablefunct
                 elif tokens[pos+3] == ';':
@@ -79,37 +93,47 @@ class DeclNode:
 
     def functionDecl(self):
         global tokens, pos, lines
-        funct = {}
         
         pos += 1
+        self.fnDecl = {}
         
         #Get line #, type of function, and identifier
-        funct['line'] = re.findall(r"line \d+",lines[pos])[0].split()[-1]
-        funct['Type'] = re.findall(r"int|double|string|bool|void", lines[pos].split()[0])[0]
-        pos += 1
-        funct['Identifier'] = lines[pos].split()[0]
-        
+        #self.fnDecl['line'] = re.findall(r"line \d+",lines[pos])[0].split()[-1]
+        self.fnDecl['(return type) Type'] = re.findall(r"int|double|string|bool|void", lines[pos].split()[0])[0]
+
+        if tokens[pos+1] == 'T_Identifier':
+            pos += 1
+            self.fnDecl['line'] = re.findall(r"line \d+",lines[pos])[0].split()[-1]
+            self.fnDecl['Identifier'] = lines[pos].split()[0]
+        else:
+            print('reportSyntaxErr(nextToken)')   
+            return    
+
         #Formals
         if tokens[pos + 1] == '(':
-            funct['Formals VarDecl'] = self.formals()
+            if tokens[pos + 2] != ')':
+                self.fnDecl['(formals) VarDecl'] = self.formals()
+            else:
+                #consume ( and )
+                pos += 2
         else:
             print('reportSyntaxErr(nextToken)')
             return
-         
+        
         #Statement block
         if tokens[pos + 1] == '{':
-            funct['StmtBlock'] = StatementNode().stmtBlock()
+            self.fnDecl['(body) StmtBlock'] = StatementNode().stmtBlock()
         else:
             print('reportSyntaxErr(nextToken)')
             return
 
-        return funct
+        return self.fnDecl
 
     def variableDecl(self):
         global tokens, pos, lines     
         
         var = {}
-        var['VarDecl'] = self.variable()
+        var = self.variable()
         
         if tokens[pos + 1] == ';':
             pos += 1
@@ -120,18 +144,17 @@ class DeclNode:
     
     def variable(self):
         global tokens, pos, lines 
-        
+
         pos += 1
         var = {}
 
-        var['line'] = re.findall(r"line \d+",lines[pos])[0].split()[-1]
+        #var['line'] = re.findall(r"line \d+",lines[pos])[0].split()[-1]
         var['Type'] = re.findall(r"int|double|string|bool|void", lines[pos].split()[0])[0]
 
         if tokens[pos+1] == 'T_Identifier':
             pos += 1
             var['Identifier'] = lines[pos].split()[0]
         else:
-            print("here")
             print('reportSyntaxErr(nextToken)')   
             return    
 
@@ -143,56 +166,50 @@ class DeclNode:
         formals = []
         pos += 1
 
-        if tokens[pos + 1] == ')':
-            pos += 1
-            return formals
-        
         formals.append(self.variable())        
-        
+
         while tokens[pos + 1] == ',':
+            pos += 1
             formals.append(self.variable()) 
         
         #Consume )
         if tokens[pos + 1] == ')':
             pos += 1   
         else:
-           print('reportSyntaxErr(nextToken)')   
-           return               
+            print('reportSyntaxErr(nextToken)')   
+            return               
 
         return formals
 
 class StatementNode:
     def __init__(self):
         self.variablestmt = None
+        self.stmtNode = None
 
     def stmtBlock(self):
         global tokens, pos, lines 
         self.variablestmt = []
-
+        self.stmtNode = {}
         #Consume {
         pos += 1
-       
+
+        if tokens[pos + 1] == '}':
+            pos += 1
+            return     
+
         while re.match(r"T_Int|T_Double|T_String|T_Bool|T_Void", tokens[pos + 1]):      
-            
             variabledecl = {}
-            variabledecl['VarDecl'] = DeclNode().variableDecl()
+            variabledecl['VarDecl'] = DeclNode().variableDecl()        
 
-            if tokens[pos + 1] == ';':
-                pos += 1                
-                self.variablestmt.append(variabledecl)
-                pos += 1
-            else:
-                print('reportSyntaxErr(nextNextToken)')
-                return
-
-        while tokens[pos + 1] != '}':  
+        while tokens[pos + 1] != '}':
             self.variablestmt.append(self.stmt())
 
         #redundant?
         if tokens[pos+1] == '}':
             pos += 1
         else:
-            print('reportSyntaxErr(nextNextToken)')                
+            print('reportSyntaxErr(nextNextToken)')   
+
 
         return self.variablestmt
     
@@ -200,6 +217,7 @@ class StatementNode:
         global tokens, pos, lines 
 
         stmt = {}
+
         if tokens[pos + 1] == 'T_If':
             print("if")
         elif tokens[pos + 1] == 'T_While':
@@ -209,31 +227,34 @@ class StatementNode:
         elif tokens[pos + 1] == 'T_Break':
             print("T_Break")
         elif tokens[pos + 1] == 'T_Return':
-            pos += 1
-            exprNode = ExpressionNode()
-            stmt['ReturnStmt'] = exprNode.expBlock()       
+            pos += 1 
+            self.stmtNode['ReturnStmt'] = ExpressionNode().logicOr()
             if tokens[pos + 1] == ';':
                 pos += 1
-                return stmt
+                return self.stmtNode
             else:
                 print('reportSyntaxErr(nextNextToken)')
                 return
         elif tokens[pos + 1] == 'T_Print':
             pos += 1
             if tokens[pos + 1] == '(':
-                stmt['PrintStmt'] = self.printStmt()
+                self.stmtNode['PrintStmt'] = self.printStmt()
+                return self.stmtNode
             else:
                 print('reportSyntaxErr(nextNextToken)')
                 return
         elif tokens[pos + 1] == '{':
             pos += 1
-            stmtNode = StatementNode()
-            stmt['StmtBlock'] = stmtNode.stmtBlock()
-            return stmt
+            stmt = StatementNode()
+            self.stmtNode['StmtBlock'] = stmt.stmtBlock()
+            return self.stmtNode
         else:
-            exprNode = ExpressionNode()
-            stmt = exprNode.expBlock()
-            return stmt
+            self.stmtNode = ExpressionNode().expBlock()
+            if tokens[pos + 1] == ';':
+                pos += 1
+                return self.stmtNode
+            else:
+                print('reportSyntaxErr(nextNextToken)')            
     
     def printStmt(self):
         global tokens, pos, lines 
@@ -241,10 +262,17 @@ class StatementNode:
         pos += 1
         exprs = []
 
-        while tokens[pos + 1] != ')':
-            exprNode = ExpressionNode()
-            exprs.append(exprNode.expBlock())
+        if tokens[pos + 1] == ')':
+            pos += 1
+            return exprs
         
+        exprs.append(ExpressionNode().expBlock())
+
+        while tokens[pos + 1] == ',':
+            pos += 1
+            exprs.append(ExpressionNode().expBlock())
+
+        #Consume )
         if tokens[pos + 1] == ')':
             pos += 1
             if tokens[pos + 1] == ';':
@@ -253,80 +281,74 @@ class StatementNode:
                 print('reportSyntaxErr(nextNextToken)')
         else:
             print('reportSyntaxErr(nextNextToken)')
-        
+
         return exprs
-    
+
 class ExpressionNode:
     def __init__(self):
         self.expr = None
     
     def expBlock(self):
-        global tokens, pos, lines             
+        global tokens, pos, lines
         
         expr = {} 
 
         if tokens[pos + 1]:
-            if tokens[pos + 1] == '(':  
-                #expr = self.parenthesis()
-                expr = "self.parenthesis()"
-            elif re.match(r"\*|\/|\%",tokens[pos + 2]):
-                #expr['ArithmeticExpr'] = self.multiplication()
-                expr['ArithmeticExpr'] = "mult"
-            elif re.match(r"\+|\-",tokens[pos + 2]):                
-                #expr['ArithmeticExpr'] = self.addition()
-                expr['ArithmeticExpr'] = "add"
-            elif re.match(r"\<|\>|T_LessEqual|T_GreaterEqual", tokens[pos + 2]):
-                #expr['Relational'] = self.relational()
-                expr['Relational'] = "relational"
-            elif re.match(r"T_Equal|T_NotEqual", tokens[pos + 2]):
-                #expr['EqualityExpr'] = self.equality()
-                expr['EqualityExpr'] = "equality"
-            elif tokens[pos + 2] == 'T_And':
-                #expr['LogicalExpr'] = self.logicAnd()
-                expr['LogicalExpr'] = "and"
-            elif tokens[pos + 2] == 'T_Or':
-                #expr['Comparison'] = self.logicOr()
-                expr['Comparison'] = "mult"
-            elif tokens[pos + 2] == '=':
-                #expr['AssignExpr'] = self.assign()
-                expr['AssignExpr'] = "assign"        
-            elif tokens[pos + 1] == 'T_Identifier':
-                if tokens[pos + 2] == '(':
-                    # call = {}
-                    # calls = []
-                    # call['Identifier'] = lines[pos+1].split()[0]
-                    # pos += 1
-                    # calls.append(call)
-                    # calls.append( self.call())
-                    #expr['Call'] = calls
-                    expr['Call'] = "calls"
+            if tokens[pos + 1] == 'T_Identifier':
+                if tokens[pos + 2] == '=':
+                    #consume identifier
+                    
+                    lval = {}
+                    express = {}
+                    pos += 1
+                    lval['Identifier'] = lines[pos].split()[0]
+                    expr['FieldAcess'] = lval
+
+                    expr['Operator'] = re.findall(r"\=",tokens[pos + 1])[0]
+                    
+                    expr['ArithmeticExpr'] = self.assign()
+                    
+                    express['AssignExpr'] = expr
+                elif tokens[pos + 2] == '(':
+                    #consume ident
+                    pos += 1
+                    expr['Identifier'] = lines[pos].split()[0]
+                    expr['Actuals'] = self.actuals()
                 else:
-                    #expr['LValue'] = lines[pos + 1].split()[0]
-                    expr['LValue'] = "lvalue"
+                    #consume ident
+                    pos += 1
+                    expr['Identifier'] = lines[pos].split()[0]
+            elif tokens[pos + 1] == '(':
+                expr = self.parenthesis()
             elif re.match(r"\-|\!",tokens[pos + 1]):
-                #expr['Urinary'] = self.urinary()
-                expr['Urinary'] = "urinary"
-            elif re.match(r"T_IntConstant|T_DoubleConstant|T_StringConstant|T_StringConstant|T_BoolConstant", tokens[pos + 1]):
+                expr['unary'] = self.unary()
+            elif re.match(r"T_IntConstant|T_DoubleConstant|T_StringConstant|T_BoolConstant", tokens[pos + 1]):
                 #consume constant token
                 pos += 1
-                name = tokens[pos].split('_')[1]
+                expr['line'] = re.findall(r"line \d+",lines[pos])[0].split()[-1]
+                name = "(args) " + tokens[pos].split('_')[1]
                 if tokens[pos] == 'T_StringConstant':
                     expr[name] = '"' + lines[pos].split('"')[1] + '"'
                 else:
                     expr[name] = lines[pos].split()[0]
+            elif tokens[pos + 1] == 'T_ReadInteger':
+                #consume readinteger, (, )
+                pos += 3
+                expr = {'ReadIntegerExpr'}
         return expr
         
     def parenthesis(self):
         global tokens, pos, lines
         #consume (
         pos += 1 
-        
         expr = {}
-        
+
         if tokens[pos + 1] == ')':
+            #consume )
+            pos += 1
             return expr
         else:
-            expr = self.expBlock()
+            expr = self.logicOr()
 
         if tokens[pos + 1] == ')':
             pos += 1
@@ -334,178 +356,154 @@ class ExpressionNode:
             print('reportSyntaxErr(nextNextToken)')
         
         return expr
-        
-    def call(self):
-        global tokens, pos, lines 
-        exprs = []
-        
-        while tokens[pos] != ')':
-            exprNode = ExpressionNode()
-            exprs.append(exprNode.expBlock())
-            if tokens[pos] == ',':
-                pos += 1
-            elif tokens[pos] == ')':
-                continue
-            
-        return exprs
     
-    def urinary(self):
-        global tokens, pos, lines        
-        urinary = {}
+    def actuals(self):
+        global tokens, pos, lines
+        actuals = []
+        #consume (            
+        pos += 1
+
+        if tokens[pos + 1] == ')':
+            pos += 1
+            return actuals
         
-        if re.match(r"\-|\!",tokens[pos + 1]):
-            urinary['Operator'] = tokens[pos]
-            pos += 1 
-            urinary['Identifier'] = lines[pos].split()[0]
+        actuals.append(self.logicOr())
+
+        while tokens[pos + 1] == ',':
+            pos += 1
+            actuals.append(self.logicOr()) 
+        
+        #Consume )
+        if tokens[pos + 1] == ')':
             pos += 1
         else:
-            pos += 1
-            urinary['Identifier'] = lines[pos].split()[0]
+            print('reportSyntaxErr(nextToken)')
+            return
 
-        return urinary
+        return actuals
+    
+    def unary(self):
+        global tokens, pos, lines
+        unary = {}
+
+        if re.match(r"\-|\!",tokens[pos + 1]):
+            pos += 1
+            unary['Operator'] = tokens[pos]
+            pos += 1 
+            name = tokens[pos].split('_')[1]
+            unary[name] = lines[pos].split()[0]
+        else:
+            unary = self.expBlock()
+
+        return unary
 
     def multiplication(self):
         global tokens, pos, lines
 
-        mult = {}
-        fields = []
-        idents = []
-        
-        
-        mult = self.urinary()
-        pos += 1
-        
-        while re.match(r"\*|\/|\%", tokens[pos + 2]):
-            mult['Operator'] = re.findall(r"\*|\/|\%",tokens[pos])
+        expr = {}
+        r_expr = {}
+
+        expr = self.unary()
+
+        while re.match(r"\*|\/|\%", tokens[pos + 1]):
             pos += 1
-            mult['Identifier'] = lines[pos].split()[0]
-            fields.append(mult['Identifier'])
-            mult['FieldAccess'] = fields
-            pos += 1
-            
-        return mult        
+            expr['Operator1'] = re.findall(r"\*|\/",tokens[pos])[0]
+            r_expr['FieldAccess1'] = self.unary()
+            expr.update(r_expr)
+
+        return expr
         
     def addition(self):
-        global tokens, pos, lines        
-        add = {}
-        fields = []
-        idents = []   
+        global tokens, pos, lines
 
-        expr = self.multiplication()
-        pos += 1
-        
+        expr = {}
+        r_expr = {}
+
+        expr= self.multiplication()
+
         while re.match(r"\+|\-", tokens[pos+1]):
-            add['Operator'] = re.findall(r"\+|\-",tokens[pos])
+            #consume +/-
             pos += 1
-            expr = ExpressionNode()
-            r_expr = expr.expBlock()       
-            pos += 1
-            fields.append(l_expr)
-            fields.append(r_expr)
-            add['FieldAccess'] = fields
-            pos += 1
-            
-        return add
+            expr['Operator2'] = re.findall(r"\+|\-",tokens[pos])[0]
+            r_expr['FieldAccess2'] = self.multiplication()
+            expr.update(r_expr)
+
+        return expr
     
     def relational(self):
         global tokens, pos, lines
         
-        relational = {}
-        fields = []
-        idents = []
-        pos -= 1
-        
-        relational['Identifier'] = lines[pos].split()[0]
-        fields.append(relational['Identifier'])         
-        pos += 1
-        relational['Operator'] = lines[pos].split()[0]
-        pos += 1
-        relational['Identifier'] = lines[pos].split()[0]
-        fields.append(relational['Identifier'])
-        relational['FieldAccess'] = fields
-        pos += 1
+        expr = {}
+        r_expr = {}
 
-        return relational        
+        expr = self.addition()
+
+        if re.match(r"\<|\>|T_LessEqual|T_GreaterEqual", tokens[pos + 1]):
+            pos += 1
+            expr['Operator3'] = lines[pos].split()[0]
+            r_expr['FieldAccess3'] = self.addition()
+            expr.update(r_expr)
+
+        return expr
 
     def equality(self):
         global tokens, pos, lines
         
-        logic = {}
-        fields = []
-        idents = []
-        pos -= 1
-        
-        logic['Identifier'] = lines[pos].split()[0]
-        fields.append(logic['Identifier'])         
-        pos += 1
-        logic['Operator'] = lines[pos].split()[0]
-        pos += 1
-        logic['Identifier'] = lines[pos].split()[0]
-        fields.append(logic['Identifier'])
-        logic['FieldAccess'] = fields
-        pos += 1
+        expr = {}
+        r_expr = {}
 
-        return logic
+        expr = self.relational()
+        
+        if re.match(r"T_Equal|T_NotEqual", tokens[pos + 1]):
+            pos += 1
+            expr['Operator4'] = lines[pos].split()[0]
+            r_expr['FieldAccess4'] = self.relational()
+            expr.update(r_expr)
+
+        return expr
     
     def logicAnd(self):
         global tokens, pos, lines
-        
-        logand = {}
-        fields = []
-        idents = []
-        pos -= 1
-        
-        logand['Identifier'] = lines[pos].split()[0]
-        fields.append(logand['Identifier'])         
-        pos += 1
-        logand['Operator'] = lines[pos].split()[0]
-        pos += 1
-        logand['Identifier'] = lines[pos].split()[0]
-        fields.append(logand['Identifier'])
-        logand['FieldAccess'] = fields
-        pos += 1
+
+        expr = {}
+        r_expr = {}
+
+        expr = self.equality()
+        while re.match(r"T_And", tokens[pos+1]):
+            #consume &&
+            pos += 1
+            expr['Operator5'] = lines[pos].split()[0]
+            r_expr['FieldAccess5'] = self.equality()
+            expr.update(r_expr)
+
             
-        return logand
+        return expr
     
     def logicOr(self):
         global tokens, pos, lines
         
-        logand = {}
-        fields = []
-        idents = []
-        pos -= 1
-        
-        logand['Identifier'] = lines[pos].split()[0]
-        fields.append(logand['Identifier'])         
-        pos += 1
-        logand['Operator'] = lines[pos].split()[0]
-        pos += 1
-        logand['Identifier'] = lines[pos].split()[0]
-        fields.append(logand['Identifier'])
-        logand['FieldAccess'] = fields
-        pos += 1
+        expr = {}
+        r_expr = {}
 
-        return logand
+        expr['FieldAccess'] = self.logicAnd()
+
+        while re.match(r"T_Or", tokens[pos+1]):
+            #consume ||
+            pos += 1
+            expr['Operator6'] = lines[pos].split()[0]
+            r_expr['FieldAccess6'] = self.logicAnd()
+            expr.update(r_expr)
+
+        return expr
 
     def assign(self):
         global tokens, pos, lines
-        pos -= 1
+        expr = {}
 
-        assign = {}
-        fields = []
-        right = {}
-        left = {}
-
-        left['Identifier'] = lines[pos].split()[0]
-        fields.append(left)
-        pos += 1
-        assign['Operator'] = re.findall(r"\=",tokens[pos])
-        pos += 1
-        exprNode = ExpressionNode()
-        right['Identifier'] = exprNode.expBlock()
-        fields.append(right)
-        assign['FieldAccess'] = fields
+        #consume =
         pos += 1
 
-        return assign
+        expr = self.logicOr()
+
+        return expr
     
