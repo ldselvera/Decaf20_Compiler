@@ -8,7 +8,7 @@ tabs    = 1
 class ProgramNode:
 
     def __init__(self):
-        self.programNode = ['Program']
+        self.programNode = ['Program:']
         self.decls = []
         
     def program(self):
@@ -69,8 +69,8 @@ class ProgramNode:
 
 class DeclNode:
     def __init__(self):
-        self.variabledecl = ['VarDecl:']
-        self.variablefunct = ['FnDecl:']
+        self.variabledecl = []
+        self.variablefunct = []
 
     def decl(self):
         global tokens, pos
@@ -98,8 +98,10 @@ class DeclNode:
         
         pos += 1
         fnDecl = []
+        fnDecl.append("FnDecl:")
         #Get line #, type of function, and identifier
         fnDecl.append("(return type) Type: " + re.findall(r"int|double|string|bool|void", lines[pos].split()[0])[0])
+        
         if tokens[pos+1] == 'T_Identifier':
             pos += 1
             #fnDecl['line'] = re.findall(r"line \d+",lines[pos])[0].split()[-1]
@@ -111,7 +113,6 @@ class DeclNode:
         #Formals
         if tokens[pos + 1] == '(':
             if tokens[pos + 2] != ')':
-                fnDecl.append('(formals) VarDecl:')
                 fnDecl.append(self.formals())
             else:
                 #consume ( and )
@@ -135,6 +136,7 @@ class DeclNode:
         
         var = []
         #var['line'] = re.findall(r"line \d+",lines[pos + 1])[0].split()[-1]
+        var.append("VarDecl:")
         var.append(self.variable())
         
         if tokens[pos + 1] == ';':
@@ -149,7 +151,6 @@ class DeclNode:
 
         pos += 1
         var = []
-
         #var['line'] = re.findall(r"line \d+",lines[pos])[0].split()[-1]
         var.append("Type: " + re.findall(r"int|double|string|bool|void", lines[pos].split()[0])[0])
 
@@ -168,11 +169,13 @@ class DeclNode:
         global tokens, pos, lines
         formals = []
         pos += 1
-
+        
+        formals.append('(formals) VarDecl:')
         formals.append(self.variable())        
 
         while tokens[pos + 1] == ',':
             pos += 1
+            formals.append('(formals) VarDecl:')
             formals.append(self.variable()) 
         
         #Consume )
@@ -281,12 +284,16 @@ class StatementNode:
         if tokens[pos + 1] == ')':
             pos += 1
             return exprs
-
-        exprs.append(ExpressionNode().expBlock())
+        #"(args) " + 
+        x = ExpressionNode().expBlock()
+        x[0] = "(args) " + x[0]
+        exprs.append(x)
 
         while tokens[pos + 1] == ',':
             pos += 1
-            exprs.append(ExpressionNode().expBlock())
+            x = ExpressionNode().expBlock()
+            x[0] = "(args) " + x[0]
+            exprs.append(x)
 
         #Consume )
         if tokens[pos + 1] == ')':
@@ -371,7 +378,7 @@ class ExpressionNode:
                     pos += 1
                     #expr['line'] = re.findall(r"line \d+",lines[pos])[0].split()[-1]
                     expr.append("AssignExpr:")
-                    expr.append('FieldAcess:')# = lval
+                    expr.append("FieldAccess:")
                     expr.append('Identifier: ' + lines[pos].split()[0])
                     expr.append('Operator: ' + re.findall(r"\=",tokens[pos + 1])[0])
                     expr.append(self.assign())
@@ -379,14 +386,14 @@ class ExpressionNode:
                     #consume ident
                     pos += 1
                     #expr['line'] = re.findall(r"line \d+",lines[pos])[0].split()[-1]
-                    expr.append('(args) Call:')
+                    expr.append('Call:')
                     expr.append('Identifier: ' + lines[pos].split()[0])
-                    expr.append('Actuals:')
                     expr.append(self.actuals())
                 else:
                     #consume ident
                     pos += 1
                     #expr['line'] = re.findall(r"line \d+",lines[pos])[0].split()[-1]
+                    expr.append("FieldAccess:")
                     expr.append('Identifier: ' + lines[pos].split()[0])                    
             elif tokens[pos + 1] == '(':
                 expr.append(self.parenthesis())
@@ -397,7 +404,7 @@ class ExpressionNode:
                 #consume constant token
                 pos += 1
                 #expr['line'] = re.findall(r"line \d+",lines[pos])[0].split()[-1]
-                name = "(args) " + tokens[pos].split('_')[1]
+                name = tokens[pos].split('_')[1]
                 if tokens[pos] == 'T_StringConstant':
                     expr.append(name + ': ' + '"' + lines[pos].split('"')[1] + '"')
                     #expr.append(' : "' + lines[pos].split('"')[1] + '"')
@@ -407,7 +414,7 @@ class ExpressionNode:
             elif tokens[pos + 1] == 'T_ReadInteger':
                 #consume readinteger, (, )
                 pos += 3
-                expr.append('ReadIntegerExpr')
+                expr.append('ReadIntegerExpr:')
         return expr
         
     def parenthesis(self):
@@ -439,12 +446,16 @@ class ExpressionNode:
         if tokens[pos + 1] == ')':
             pos += 1
             return actuals
-        
-        actuals.append(self.logicOr())
+
+        x = self.logicOr()
+        x[0] = "(actuals) " + x[0]
+        actuals.append(x)
 
         while tokens[pos + 1] == ',':
             pos += 1
-            actuals.append(self.logicOr()) 
+            x = self.logicOr()
+            x[0] = "(actuals) " + x[0]
+            actuals.append(x)
         
         #Consume )
         if tokens[pos + 1] == ')':
@@ -466,8 +477,7 @@ class ExpressionNode:
             name = tokens[pos].split('_')[1]
             expr.append(name + ": " + lines[pos].split()[0])
         else:
-            expr.append("FieldAccess:")
-            expr.append(self.expBlock())
+            expr=self.expBlock()
 
         return expr
 
@@ -475,14 +485,13 @@ class ExpressionNode:
         global tokens, pos, lines
 
         expr = []
-        r_expr = []
 
-        expr.append(self.unary())
+        expr=self.unary()
 
         while re.match(r"\*|\/|\%", tokens[pos + 1]):
+            expr.append("ArithmeticExpr:")
             pos += 1
             expr.append('Operator: ' + re.findall(r"\*|\/",tokens[pos])[0])
-            expr.append("FieldAccess:")
             expr.append(self.unary())
 
         return expr
@@ -492,13 +501,13 @@ class ExpressionNode:
 
         expr = []
 
-        expr.append(self.multiplication())
+        expr=self.multiplication()
 
         while re.match(r"\+|\-", tokens[pos+1]):
+            expr.append("ArithmeticExpr:")
             #consume +/-
             pos += 1
             expr.append('Operator: ' + re.findall(r"\+|\-",tokens[pos])[0])
-            expr.append("FieldAccess:")
             expr.append(self.multiplication())
 
         return expr
@@ -508,12 +517,11 @@ class ExpressionNode:
         
         expr = []
 
-        expr.append(self.addition())
+        expr=self.addition()
 
         if re.match(r"\<|\>|T_LessEqual|T_GreaterEqual", tokens[pos + 1]):
             pos += 1
             expr.append('Operator: ' + lines[pos].split()[0])
-            expr.append("FieldAccess:")
             expr.append(self.addition()) 
 
         return expr
@@ -523,12 +531,11 @@ class ExpressionNode:
         
         expr = []
 
-        expr.append(self.relational())
+        expr=self.relational()
         
         if re.match(r"T_Equal|T_NotEqual", tokens[pos + 1]):
             pos += 1
             expr.append('Operator: ' + lines[pos].split()[0])
-            expr.append("FieldAccess:")
             expr.append(self.relational())  
 
         return expr
@@ -538,13 +545,12 @@ class ExpressionNode:
 
         expr = []
 
-        expr.append(self.equality())
+        expr = self.equality()
         
         while re.match(r"T_And", tokens[pos+1]):
             #consume &&
             pos += 1
             expr.append('Operator: ' + lines[pos].split()[0])
-            expr.append("FieldAccess:")
             expr.append(self.equality())     
             
         return expr
@@ -554,13 +560,12 @@ class ExpressionNode:
         
         expr = []
 
-        expr.append(self.logicAnd())
-
+        #expr.append(self.logicAnd())
+        expr = self.logicAnd()
         while re.match(r"T_Or", tokens[pos+1]):
             #consume ||
             pos += 1
             expr.append('Operator: ' + lines[pos].split()[0])
-            expr.append("FieldAccess:")
             expr.append(self.logicAnd())            
 
         return expr
@@ -571,7 +576,7 @@ class ExpressionNode:
 
         #consume =
         pos += 1
-        expr.append("ArithmeticExpr:")
+
         expr.append(self.logicOr())
 
         return expr
