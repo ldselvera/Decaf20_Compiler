@@ -198,6 +198,7 @@ class StatementNode:
 
         #Consume {
         pos += 1  
+
         if tokens[pos + 1] == '}':
             pos += 1
             return     
@@ -206,7 +207,11 @@ class StatementNode:
             self.variabledecl.append(DeclNode().variableDecl())
 
         while tokens[pos + 1] != '}': 
-            self.variablestmt.append(self.stmt())
+            x = self.stmt()
+            self.variablestmt.append(x)
+            print(x)
+            print(lines[pos])
+            print(lines[pos+1])
 
         #redundant?
         if tokens[pos+1] == '}':
@@ -215,7 +220,8 @@ class StatementNode:
             print('reportSyntaxErr(nextNextToken)')   
 
         self.stmts.append(self.variabledecl)
-        self.stmts.append(self.variablestmt)        
+        self.stmts.append(self.variablestmt)   
+  
         return self.stmts
     
     def stmt(self):
@@ -224,20 +230,20 @@ class StatementNode:
         stmt = []
 
         if tokens[pos + 1] == 'T_If':
-            stmt.append('ifStmt')
+            stmt.append('ifStmt:')
             stmt.append(self.ifStmt())
             return stmt
         elif tokens[pos + 1] == 'T_While':
-            stmt.append('WhileStmt')
-            stmt.append(self.whileStmt())            
+            stmt.append('WhileStmt:')
+            stmt.append(self.whileStmt())      
             return stmt
         elif tokens[pos + 1] == 'T_For':
             print("T_For")
         elif tokens[pos + 1] == 'T_Break':
-            pos += 1 
-            stmt.append('T_Break:')       
+            pos += 1  
+            stmt.append('BreakStmt:')
             if tokens[pos + 1] == ';':
-                pos += 1
+                pos += 1              
                 return stmt
             else:
                 print('reportSyntaxErr(nextNextToken)')
@@ -265,7 +271,7 @@ class StatementNode:
                 return
         elif tokens[pos + 1] == '{':
             stmt.append('StmtBlock:')
-            stmt.append(StatementNode().stmtBlock())            
+            stmt.append(StatementNode().stmtBlock())              
             return stmt
         else:
             stmt.append(ExpressionNode().expBlock())
@@ -327,13 +333,14 @@ class StatementNode:
         else:
             print('reportSyntaxErr(nextNextToken)')
 
-        stmt.append("then")
-        stmt.append(self.stmt())
-        
+
+        x = self.stmt()
+        x[0] = "(then) " + x[0]
+        stmt.append(x)
+
         while tokens[pos + 1] == 'T_Else':
             pos += 1
             stmt.append(self.stmt())
-
         return stmt
 
     def whileStmt(self):
@@ -353,8 +360,7 @@ class StatementNode:
                 print('reportSyntaxErr(nextNextToken)')
         else:
             print('reportSyntaxErr(nextNextToken)')        
-
-        stmt.append("then")
+  
         stmt.append(self.stmt())
 
         return stmt
@@ -521,6 +527,7 @@ class ExpressionNode:
 
         if re.match(r"\<|\>|T_LessEqual|T_GreaterEqual", tokens[pos + 1]):
             pos += 1
+            expr.append("RelationalExpr:")
             expr.append('Operator: ' + lines[pos].split()[0])
             expr.append(self.addition()) 
 
@@ -534,7 +541,8 @@ class ExpressionNode:
         expr=self.relational()
         
         if re.match(r"T_Equal|T_NotEqual", tokens[pos + 1]):
-            pos += 1
+            pos += 1            
+            expr.append("EqualityExpr:")
             expr.append('Operator: ' + lines[pos].split()[0])
             expr.append(self.relational())  
 
@@ -550,6 +558,7 @@ class ExpressionNode:
         while re.match(r"T_And", tokens[pos+1]):
             #consume &&
             pos += 1
+            expr.append("LogicalExpr:")
             expr.append('Operator: ' + lines[pos].split()[0])
             expr.append(self.equality())     
             
@@ -565,6 +574,7 @@ class ExpressionNode:
         while re.match(r"T_Or", tokens[pos+1]):
             #consume ||
             pos += 1
+            expr.append("LogicalExpr:")
             expr.append('Operator: ' + lines[pos].split()[0])
             expr.append(self.logicAnd())            
 
