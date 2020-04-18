@@ -1,4 +1,5 @@
 import re
+import sys
 
 lines   = []
 tokens  = []
@@ -88,10 +89,10 @@ class DeclNode:
                     return self.variabledecl
             else:
                 print('reportSyntaxErr(nextNextToken)')
-                return
+                
         else:
             print('reportSyntaxErr(nextToken)')
-            return
+            
 
     def functionDecl(self):
         global tokens, pos, lines
@@ -108,7 +109,7 @@ class DeclNode:
             fnDecl.append("Identifier: " + lines[pos].split()[0])
         else:
             print('reportSyntaxErr(nextToken)')   
-            return    
+                
 
         #Formals
         if tokens[pos + 1] == '(':
@@ -119,7 +120,7 @@ class DeclNode:
                 pos += 2
         else:
             print('reportSyntaxErr(nextToken)')
-            return
+            
         
         #Statement block
         if tokens[pos + 1] == '{':
@@ -127,7 +128,7 @@ class DeclNode:
             fnDecl.append(StatementNode().stmtBlock())
         else:
             print('reportSyntaxErr(nextToken)')
-            return
+            
 
         return fnDecl
 
@@ -144,7 +145,7 @@ class DeclNode:
             return var
         else:
             print('reportSyntaxErr(nextToken)')
-            return
+            
     
     def variable(self):
         global tokens, pos, lines 
@@ -157,10 +158,11 @@ class DeclNode:
         if tokens[pos+1] == 'T_Identifier':
             pos += 1
             #var['line'] = re.findall(r"line \d+",lines[pos])[0].split()[-1]
-            var.append("Identifier: " + lines[pos].split()[0])
-        else:
-            print('reportSyntaxErr(nextToken)')   
-            return    
+            var.append("Identifier: " + lines[pos].split()[0]) 
+        else: 
+            print("error")
+            sys.exit()
+                
 
         return var
     
@@ -183,7 +185,7 @@ class DeclNode:
             pos += 1   
         else:
             print('reportSyntaxErr(nextToken)')   
-            return               
+                           
 
         return formals
 
@@ -197,7 +199,7 @@ class StatementNode:
         global tokens, pos, lines 
 
         #Consume {
-        pos += 1  
+        pos += 1 
 
         if tokens[pos + 1] == '}':
             pos += 1
@@ -207,17 +209,14 @@ class StatementNode:
             self.variabledecl.append(DeclNode().variableDecl())
 
         while tokens[pos + 1] != '}': 
-            x = self.stmt()
-            self.variablestmt.append(x)
-            print(x)
-            print(lines[pos])
-            print(lines[pos+1])
+            self.variablestmt.append(self.stmt())
 
         #redundant?
         if tokens[pos+1] == '}':
             pos += 1
         else:
-            print('reportSyntaxErr(nextNextToken)')   
+            print('reportSyntaxErr(nextNextToken)')
+            
 
         self.stmts.append(self.variabledecl)
         self.stmts.append(self.variablestmt)   
@@ -235,10 +234,12 @@ class StatementNode:
             return stmt
         elif tokens[pos + 1] == 'T_While':
             stmt.append('WhileStmt:')
-            stmt.append(self.whileStmt())      
+            stmt.append(self.whileStmt())     
             return stmt
         elif tokens[pos + 1] == 'T_For':
-            print("T_For")
+            stmt.append('ForStmt:')
+            stmt.append(self.forStmt())     
+            return stmt
         elif tokens[pos + 1] == 'T_Break':
             pos += 1  
             stmt.append('BreakStmt:')
@@ -247,7 +248,7 @@ class StatementNode:
                 return stmt
             else:
                 print('reportSyntaxErr(nextNextToken)')
-                return            
+                            
         elif tokens[pos + 1] == 'T_Return':
             pos += 1 
             #stmt['line'] = re.findall(r"line \d+",lines[pos])[0].split()[-1]
@@ -258,7 +259,7 @@ class StatementNode:
                 return stmt
             else:
                 print('reportSyntaxErr(nextNextToken)')
-                return
+                
         elif tokens[pos + 1] == 'T_Print':
             #consume print token
             pos += 1
@@ -268,18 +269,19 @@ class StatementNode:
                 return stmt
             else:
                 print('reportSyntaxErr(nextNextToken)')
-                return
+                
         elif tokens[pos + 1] == '{':
             stmt.append('StmtBlock:')
             stmt.append(StatementNode().stmtBlock())              
             return stmt
         else:
-            stmt.append(ExpressionNode().expBlock())
+            stmt = ExpressionNode().expBlock()
             if tokens[pos + 1] == ';':
                 pos += 1
                 return stmt
             else:
                 print('reportSyntaxErr(nextNextToken)')
+                
 
     def printStmt(self):
         global tokens, pos, lines 
@@ -308,8 +310,10 @@ class StatementNode:
                 pos += 1
             else:
                 print('reportSyntaxErr(nextNextToken)')
+                
         else:
             print('reportSyntaxErr(nextNextToken)')
+            
 
         return exprs
 
@@ -324,23 +328,28 @@ class StatementNode:
         if tokens[pos + 1] == '(':
             #consume (
             pos += 1
+
             stmt.append(ExpressionNode().logicOr())
             if tokens[pos + 1] == ')':
                 #consume )
                 pos += 1
             else:
                 print('reportSyntaxErr(nextNextToken)')
+                
         else:
             print('reportSyntaxErr(nextNextToken)')
+            
 
-
-        x = self.stmt()
+        x = self.stmt() 
         x[0] = "(then) " + x[0]
         stmt.append(x)
 
         while tokens[pos + 1] == 'T_Else':
             pos += 1
-            stmt.append(self.stmt())
+            x = self.stmt() 
+            x[0] = "(then) " + x[0]
+            stmt.append(x)
+
         return stmt
 
     def whileStmt(self):
@@ -358,15 +367,73 @@ class StatementNode:
                 pos += 1
             else:
                 print('reportSyntaxErr(nextNextToken)')
+                
         else:
-            print('reportSyntaxErr(nextNextToken)')        
-  
+            print('reportSyntaxErr(nextNextToken)')
+            
+
         stmt.append(self.stmt())
 
         return stmt
 
     def forStmt(self):
-        pass
+        global tokens, lines, pos
+        stmt = []
+        #consume for token
+        pos += 1
+
+        if tokens[pos + 1] == '(':
+            #consume (
+            pos += 1
+          
+            #first expression may be empty
+            if tokens[pos+1] == ';':
+                stmt.append("(init) Empty:")
+                pos += 1
+            else:
+                x = ExpressionNode().logicOr()
+                x[0] = "(init) " + x[0]
+                stmt.append(x)
+                #stmt.append(ExpressionNode().logicOr())
+                pos += 1
+                             
+            #second expression is enforced
+            x = ExpressionNode().logicOr()
+            x[0] = "(test) " + x[0]
+            stmt.append(x)
+            #stmt.append(ExpressionNode().logicOr())
+
+            #enforce ; after expression
+            if tokens[pos + 1] == ';':
+                pos += 1
+            else:
+                print('reportSyntaxErr(nextNextToken)')
+                
+
+            #third expression is optional
+            if tokens[pos+1] == ';':
+                stmt.append("(step) Empty:")
+                pos += 1
+            else:
+                x = ExpressionNode().logicOr()
+                x[0] = "(step) " + x[0]
+                stmt.append(x)
+                #stmt.append(ExpressionNode().logicOr())            
+                pos += 1
+
+            if tokens[pos + 1] == ')':
+                #consume )
+                pos += 1
+            else:
+                print('reportSyntaxErr(nextNextToken)')
+                
+        else:
+            print('reportSyntaxErr(nextNextToken)')   
+            
+
+        stmt.append(self.stmt())
+
+        return stmt
 
 class ExpressionNode:
     def __init__(self):
@@ -380,14 +447,7 @@ class ExpressionNode:
         if tokens[pos + 1]:
             if tokens[pos + 1] == 'T_Identifier':
                 if tokens[pos + 2] == '=':
-                    #consume identifier
-                    pos += 1
-                    #expr['line'] = re.findall(r"line \d+",lines[pos])[0].split()[-1]
-                    expr.append("AssignExpr:")
-                    expr.append("FieldAccess:")
-                    expr.append('Identifier: ' + lines[pos].split()[0])
-                    expr.append('Operator: ' + re.findall(r"\=",tokens[pos + 1])[0])
-                    expr.append(self.assign())
+                    expr = self.assign()
                 elif tokens[pos + 2] == '(':
                     #consume ident
                     pos += 1
@@ -440,6 +500,7 @@ class ExpressionNode:
             pos += 1
         else:
             print('reportSyntaxErr(nextNextToken)')
+            
         
         return expr
     
@@ -468,7 +529,7 @@ class ExpressionNode:
             pos += 1
         else:
             print('reportSyntaxErr(nextToken)')
-            return
+            
 
         return actuals
     
@@ -483,7 +544,7 @@ class ExpressionNode:
             name = tokens[pos].split('_')[1]
             expr.append(name + ": " + lines[pos].split()[0])
         else:
-            expr=self.expBlock()
+            expr = self.expBlock()
 
         return expr
 
@@ -492,12 +553,12 @@ class ExpressionNode:
 
         expr = []
 
-        expr=self.unary()
+        expr = self.unary()
 
         while re.match(r"\*|\/|\%", tokens[pos + 1]):
             expr.append("ArithmeticExpr:")
             pos += 1
-            expr.append('Operator: ' + re.findall(r"\*|\/",tokens[pos])[0])
+            expr.append('Operator: ' + re.findall(r"\*|\/|\%",tokens[pos])[0])
             expr.append(self.unary())
 
         return expr
@@ -538,13 +599,13 @@ class ExpressionNode:
         
         expr = []
 
-        expr=self.relational()
+        expr = self.relational()
         
         if re.match(r"T_Equal|T_NotEqual", tokens[pos + 1]):
             pos += 1            
             expr.append("EqualityExpr:")
             expr.append('Operator: ' + lines[pos].split()[0])
-            expr.append(self.relational())  
+            expr.append(self.relational())
 
         return expr
     
@@ -583,10 +644,16 @@ class ExpressionNode:
     def assign(self):
         global tokens, pos, lines
         expr = []
+        #consume identifier
+        pos += 1
+        #expr['line'] = re.findall(r"line \d+",lines[pos])[0].split()[-1]
+        expr = ["AssignExpr:"]
+        expr.append("FieldAccess:")
+        expr.append('Identifier: ' + lines[pos].split()[0])
+        expr.append('Operator: ' + re.findall(r"\=",tokens[pos + 1])[0])        
 
         #consume =
         pos += 1
-
         expr.append(self.logicOr())
 
         return expr
