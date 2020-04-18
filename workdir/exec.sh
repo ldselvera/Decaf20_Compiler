@@ -1,2 +1,2 @@
 #! /bin/bash
-python ../lex_analyzer.py $1
+python3 ../main.py $1

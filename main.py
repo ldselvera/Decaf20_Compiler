@@ -26,9 +26,7 @@ def pars(input_dir, lex_dir):
         
 def main():
     input_dir = sys.argv[1]
-#     lex_dir = sys.argv[2]
-#    input_dir = 'samples2/bad6.decaf'
-    lex_dir = 'simple.out'
+    lex_dir = 'temp.out'
 
     scan(input_dir, lex_dir)
     pars(input_dir, lex_dir)
