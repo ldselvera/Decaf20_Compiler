@@ -9,23 +9,29 @@ importlib.reload(dp)
 importlib.reload(sc)
 
 def scan(filename, out):
-    with open(out, 'w') as f:
-        with redirect_stdout(f):
-            sc.scanner(filename)
+    try:
+        with open(out, 'w') as f:
+            with redirect_stdout(f):
+                sc.scanner(filename)
+    except FileNotFoundError as e:
+        print(e)
             
-def pars(lex_dir):
-    prog = dp.ProgramNode()
-    prog.load_data(lex_dir)
-    prog.program()
+def pars(input_dir, lex_dir):
+    try:
+        prog = dp.ProgramNode()
+        prog.load_data(input_dir, lex_dir)
+        prog.program()
+    except FileNotFoundError as e:
+        print(e)
         
 def main():
-#     input_dir = sys.argv[1]
+    input_dir = sys.argv[1]
 #     lex_dir = sys.argv[2]
-    input_dir = 'samples2/bad1.decaf'
+#    input_dir = 'samples2/bad6.decaf'
     lex_dir = 'simple.out'
 
     scan(input_dir, lex_dir)
-    pars(lex_dir)
+    pars(input_dir, lex_dir)
 
 if __name__ == "__main__":
     main()

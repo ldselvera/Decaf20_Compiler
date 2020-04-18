@@ -3,8 +3,23 @@ import sys
 
 lines   = []
 tokens  = []
+original = []
 pos     = -1
 tabs    = 1
+
+def error_handle():        
+    global tokens, pos, lines
+
+    line_no = re.findall(r"line \d+",lines[pos])[0].split()[-1]
+    token   = lines[pos].split()[0]
+    line    = original[int(line_no) - 1]
+    print("\n*** Error line " + line_no + ".")
+    print(line)
+    result = line.find(token) 
+    print( " " * (result) + '^'*len(token)) 
+
+    print("*** syntax error\n\n")
+    sys.exit()
 
 class ProgramNode:
 
@@ -28,21 +43,28 @@ class ProgramNode:
 
         return self.decls
 
-    def load_data(self, lex_dir = ''):
-        global lines, tokens
-        if lex_dir:
-            f = open(lex_dir)
-            lines = f.read().split('\n')
-            #Loop for getting constants: string, int, double
-            for line in lines:
-                if line:
-                    if re.findall(r'\(.*?\)', line):
-                        tokens.append(line.split('(')[0].split()[-1])
-                    else:
-                        tokens.append(line.split()[-1])
-            #Remove extra ' on tokens
-            tokens = [token.replace("'", '') for token in tokens]
-            f.close() 
+    def load_data(self, raw_dir = '', lex_dir = ''):
+        global lines, tokens, original
+        try:
+            if lex_dir:
+                f = open(lex_dir)
+                lines = f.read().split('\n')
+                #Loop for getting constants: string, int, double
+                for line in lines:
+                    if line:
+                        if re.findall(r'\(.*?\)', line):
+                            tokens.append(line.split('(')[0].split()[-1])
+                        else:
+                            tokens.append(line.split()[-1])
+                #Remove extra ' on tokens
+                tokens = [token.replace("'", '') for token in tokens]
+                f.close()
+            if raw_dir:
+                f = open(raw_dir)
+                original = f.read().split('\n')
+                f.close() 
+        except FileNotFoundError as e:
+            print(e)
             
     def print_data(self, prog):
         for node in prog:
@@ -75,23 +97,30 @@ class DeclNode:
 
     def decl(self):
         global tokens, pos
-
         #Check declaration type
-        if re.match(r"T_Int|T_Double|T_String|T_Bool|T_Void", tokens[pos + 1]):
-            if tokens[pos + 2] == 'T_Identifier':
-                if tokens[pos + 3] == '(':
-                    #Function declaration
-                    self.variablefunct.append(self.functionDecl())
-                    return self.variablefunct
-                elif tokens[pos+3] == ';':
-                    #Variable declaration
-                    self.variabledecl.append(self.variableDecl())
-                    return self.variabledecl
-            else:
-                print('reportSyntaxErr(nextNextToken)')
-                
+
+        if pos + 1 < len(tokens):
+            if re.match(r"T_Int|T_Double|T_String|T_Bool|T_Void", tokens[pos + 1]):
+                if pos + 2 < len(tokens):
+                    if tokens[pos + 2] == 'T_Identifier':
+                        if pos + 3 < len(tokens):
+                            if tokens[pos + 3] == '(':
+                                #Function declaration
+                                self.variablefunct = self.functionDecl()
+                                return self.variablefunct
+                            else:
+                                #Variable declaration
+                                self.variabledecl = self.variableDecl()
+                                return self.variabledecl           
+                        else:
+                            pos += 2
+                            error_handle()
+                else:
+                    pos += 1
+                    error_handle()
         else:
-            print('reportSyntaxErr(nextToken)')
+            pos += 1
+            error_handle()
             
 
     def functionDecl(self):
@@ -103,12 +132,13 @@ class DeclNode:
         #Get line #, type of function, and identifier
         fnDecl.append("(return type) Type: " + re.findall(r"int|double|string|bool|void", lines[pos].split()[0])[0])
         
-        if tokens[pos+1] == 'T_Identifier':
+        if tokens[pos + 1] == 'T_Identifier':
             pos += 1
             #fnDecl['line'] = re.findall(r"line \d+",lines[pos])[0].split()[-1]
             fnDecl.append("Identifier: " + lines[pos].split()[0])
         else:
-            print('reportSyntaxErr(nextToken)')   
+            pos += 1
+            error_handle() 
                 
 
         #Formals
@@ -119,7 +149,8 @@ class DeclNode:
                 #consume ( and )
                 pos += 2
         else:
-            print('reportSyntaxErr(nextToken)')
+            pos += 1
+            error_handle()
             
         
         #Statement block
@@ -127,9 +158,9 @@ class DeclNode:
             fnDecl.append('(body) StmtBlock:')
             fnDecl.append(StatementNode().stmtBlock())
         else:
-            print('reportSyntaxErr(nextToken)')
+            pos += 1
+            error_handle()
             
-
         return fnDecl
 
     def variableDecl(self):
@@ -139,12 +170,13 @@ class DeclNode:
         #var['line'] = re.findall(r"line \d+",lines[pos + 1])[0].split()[-1]
         var.append("VarDecl:")
         var.append(self.variable())
-        
+
         if tokens[pos + 1] == ';':
             pos += 1
             return var
         else:
-            print('reportSyntaxErr(nextToken)')
+            pos += 1
+            error_handle()
             
     
     def variable(self):
@@ -155,15 +187,14 @@ class DeclNode:
         #var['line'] = re.findall(r"line \d+",lines[pos])[0].split()[-1]
         var.append("Type: " + re.findall(r"int|double|string|bool|void", lines[pos].split()[0])[0])
 
-        if tokens[pos+1] == 'T_Identifier':
+        if tokens[pos + 1] == 'T_Identifier':
             pos += 1
             #var['line'] = re.findall(r"line \d+",lines[pos])[0].split()[-1]
             var.append("Identifier: " + lines[pos].split()[0]) 
-        else: 
-            print("error")
-            sys.exit()
+        else:
+            pos += 1 
+            error_handle()
                 
-
         return var
     
     #List of variables seperated by comma
@@ -184,9 +215,9 @@ class DeclNode:
         if tokens[pos + 1] == ')':
             pos += 1   
         else:
-            print('reportSyntaxErr(nextToken)')   
+            pos += 1
+            error_handle()
                            
-
         return formals
 
 class StatementNode:
@@ -212,11 +243,11 @@ class StatementNode:
             self.variablestmt.append(self.stmt())
 
         #redundant?
-        if tokens[pos+1] == '}':
+        if tokens[pos + 1] == '}':
             pos += 1
         else:
-            print('reportSyntaxErr(nextNextToken)')
-            
+            pos += 1
+            error_handle()
 
         self.stmts.append(self.variabledecl)
         self.stmts.append(self.variablestmt)   
@@ -247,19 +278,24 @@ class StatementNode:
                 pos += 1              
                 return stmt
             else:
-                print('reportSyntaxErr(nextNextToken)')
-                            
+                pos += 1
+                error_handle()
         elif tokens[pos + 1] == 'T_Return':
             pos += 1 
             #stmt['line'] = re.findall(r"line \d+",lines[pos])[0].split()[-1]
             stmt.append('ReturnStmt:')
-            stmt.append(ExpressionNode().logicOr())            
+            if tokens[pos + 1] == ';':
+                stmt.append('Empty:')
+                pos += 1              
+                return stmt
+            else:
+                stmt.append(ExpressionNode().logicOr())      
             if tokens[pos + 1] == ';':
                 pos += 1
                 return stmt
             else:
-                print('reportSyntaxErr(nextNextToken)')
-                
+                pos += 1
+                error_handle()
         elif tokens[pos + 1] == 'T_Print':
             #consume print token
             pos += 1
@@ -268,19 +304,22 @@ class StatementNode:
                 stmt.append(self.printStmt())                
                 return stmt
             else:
-                print('reportSyntaxErr(nextNextToken)')
-                
+                pos += 1
+                error_handle()
         elif tokens[pos + 1] == '{':
             stmt.append('StmtBlock:')
             stmt.append(StatementNode().stmtBlock())              
             return stmt
         else:
             stmt = ExpressionNode().expBlock()
+            # print(lines[pos])
+            # print(lines[pos+1])
             if tokens[pos + 1] == ';':
                 pos += 1
                 return stmt
             else:
-                print('reportSyntaxErr(nextNextToken)')
+                pos += 2
+                error_handle()
                 
 
     def printStmt(self):
@@ -291,7 +330,7 @@ class StatementNode:
 
         if tokens[pos + 1] == ')':
             pos += 1
-            return exprs
+            return 
         #"(args) " + 
         x = ExpressionNode().expBlock()
         x[0] = "(args) " + x[0]
@@ -309,12 +348,12 @@ class StatementNode:
             if tokens[pos + 1] == ';':
                 pos += 1
             else:
-                print('reportSyntaxErr(nextNextToken)')
-                
+                pos += 1
+                error_handle()
         else:
-            print('reportSyntaxErr(nextNextToken)')
+            pos += 1
+            error_handle()
             
-
         return exprs
 
     def ifStmt(self):
@@ -334,12 +373,12 @@ class StatementNode:
                 #consume )
                 pos += 1
             else:
-                print('reportSyntaxErr(nextNextToken)')
-                
+                pos += 1
+                error_handle()
         else:
-            print('reportSyntaxErr(nextNextToken)')
+            pos += 1
+            error_handle()
             
-
         x = self.stmt() 
         x[0] = "(then) " + x[0]
         stmt.append(x)
@@ -366,11 +405,11 @@ class StatementNode:
                 #consume )
                 pos += 1
             else:
-                print('reportSyntaxErr(nextNextToken)')
-                
+                pos += 1
+                error_handle()              
         else:
-            print('reportSyntaxErr(nextNextToken)')
-            
+            pos += 1
+            error_handle()           
 
         stmt.append(self.stmt())
 
@@ -387,7 +426,7 @@ class StatementNode:
             pos += 1
           
             #first expression may be empty
-            if tokens[pos+1] == ';':
+            if tokens[pos + 1] == ';':
                 stmt.append("(init) Empty:")
                 pos += 1
             else:
@@ -395,7 +434,6 @@ class StatementNode:
                 x[0] = "(init) " + x[0]
                 stmt.append(x)
                 #stmt.append(ExpressionNode().logicOr())
-                pos += 1
                              
             #second expression is enforced
             x = ExpressionNode().logicOr()
@@ -407,11 +445,12 @@ class StatementNode:
             if tokens[pos + 1] == ';':
                 pos += 1
             else:
-                print('reportSyntaxErr(nextNextToken)')
+                pos += 1
+                error_handle()
                 
 
             #third expression is optional
-            if tokens[pos+1] == ';':
+            if tokens[pos + 1] == ';':
                 stmt.append("(step) Empty:")
                 pos += 1
             else:
@@ -419,16 +458,16 @@ class StatementNode:
                 x[0] = "(step) " + x[0]
                 stmt.append(x)
                 #stmt.append(ExpressionNode().logicOr())            
-                pos += 1
-
+            
             if tokens[pos + 1] == ')':
                 #consume )
                 pos += 1
             else:
-                print('reportSyntaxErr(nextNextToken)')
-                
+                pos += 1
+                error_handle()
         else:
-            print('reportSyntaxErr(nextNextToken)')   
+            pos += 1
+            error_handle()
             
 
         stmt.append(self.stmt())
@@ -472,15 +511,21 @@ class ExpressionNode:
                 #expr['line'] = re.findall(r"line \d+",lines[pos])[0].split()[-1]
                 name = tokens[pos].split('_')[1]
                 if tokens[pos] == 'T_StringConstant':
-                    expr.append(name + ': ' + '"' + lines[pos].split('"')[1] + '"')
+                    value = name + ': ' + '"' + lines[pos].split('"')[1] + '"'
+                    expr.append(value)
                     #expr.append(' : "' + lines[pos].split('"')[1] + '"')
                 else:
-                    expr.append(name + ": " + lines[pos].split()[0])
+                    value = name + ": " + lines[pos].split()[0]
+                    print(value)
+                    expr.append(value)
                     #expr[name] = lines[pos].split()[0]
             elif tokens[pos + 1] == 'T_ReadInteger':
                 #consume readinteger, (, )
                 pos += 3
                 expr.append('ReadIntegerExpr:')
+            else:
+                pos += 1
+                error_handle()
         return expr
         
     def parenthesis(self):
@@ -492,14 +537,15 @@ class ExpressionNode:
         if tokens[pos + 1] == ')':
             #consume )
             pos += 1
-            return expr
+            return 
         else:
             expr = self.logicOr()
 
         if tokens[pos + 1] == ')':
             pos += 1
         else:
-            print('reportSyntaxErr(nextNextToken)')
+            pos += 1
+            error_handle()
             
         
         return expr
@@ -512,7 +558,7 @@ class ExpressionNode:
 
         if tokens[pos + 1] == ')':
             pos += 1
-            return actuals
+            return 
 
         x = self.logicOr()
         x[0] = "(actuals) " + x[0]
@@ -528,9 +574,9 @@ class ExpressionNode:
         if tokens[pos + 1] == ')':
             pos += 1
         else:
-            print('reportSyntaxErr(nextToken)')
+            pos += 1
+            error_handle()
             
-
         return actuals
     
     def unary(self):
@@ -570,7 +616,7 @@ class ExpressionNode:
 
         expr=self.multiplication()
 
-        while re.match(r"\+|\-", tokens[pos+1]):
+        while re.match(r"\+|\-", tokens[pos + 1]):
             expr.append("ArithmeticExpr:")
             #consume +/-
             pos += 1
@@ -616,7 +662,7 @@ class ExpressionNode:
 
         expr = self.equality()
         
-        while re.match(r"T_And", tokens[pos+1]):
+        while re.match(r"T_And", tokens[pos + 1]):
             #consume &&
             pos += 1
             expr.append("LogicalExpr:")
@@ -632,7 +678,7 @@ class ExpressionNode:
 
         #expr.append(self.logicAnd())
         expr = self.logicAnd()
-        while re.match(r"T_Or", tokens[pos+1]):
+        while re.match(r"T_Or", tokens[pos + 1]):
             #consume ||
             pos += 1
             expr.append("LogicalExpr:")
