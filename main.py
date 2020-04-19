@@ -26,7 +26,7 @@ def pars(input_dir, lex_dir):
         
 def main():
     input_dir = sys.argv[1]
-    lex_dir = 'temp.out'
+    lex_dir = 'lex.out'
 
     scan(input_dir, lex_dir)
     pars(input_dir, lex_dir)
