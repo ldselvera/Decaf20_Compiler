@@ -5,7 +5,7 @@ lines   = []
 tokens  = []
 original = []
 pos     = -1
-tabs    = 0
+tabs    = 1
 
 def error_handle():
     global tokens, pos, lines, tabs
@@ -18,7 +18,7 @@ def error_handle():
     result = line.find(token) 
     print( " " * (result) + '^'*len(token)) 
 
-    print("*** syntax error\n\n")
+    print("*** syntax error\n")
     sys.exit()
 
 def get_spaces(line):
@@ -100,7 +100,8 @@ class ProgramNode:
             if isinstance(node, list):
                 self.print_data(node)
             else:
-                print(node)
+                print(" "*tabs + node)
+                tabs += 1
 
 class DeclNode:
     def __init__(self):
