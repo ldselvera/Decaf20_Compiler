@@ -5,7 +5,7 @@ lines   = []
 tokens  = []
 original = []
 pos     = -1
-tabs    = 1
+tabs    = 0
 
 def error_handle():
     global tokens, pos, lines, tabs
@@ -21,9 +21,11 @@ def error_handle():
     print("*** syntax error\n")
     sys.exit()
 
-def get_spaces(line):
+def get_spaces(line = 0):
     if int(line) < 10:
         sp = 2
+        if int(line) == 0:
+            sp += 1
     elif int(line) < 100:
         sp = 1
     else:
@@ -62,6 +64,7 @@ class ProgramNode:
         else:
             #Keep adding decl to the program
             while (pos + 1) < len(tokens):
+
                 self.decls.append(DeclNode().decl())
 
 
@@ -100,8 +103,7 @@ class ProgramNode:
             if isinstance(node, list):
                 self.print_data(node)
             else:
-                print(" "*tabs + node)
-                tabs += 1
+                print( node)
 
 class DeclNode:
     def __init__(self):
@@ -111,7 +113,7 @@ class DeclNode:
     def decl(self):
         global tokens, pos, tabs
         #Check declaration type
-
+        
         if pos + 1 < len(tokens):
             if re.match(r"T_Int|T_Double|T_String|T_Bool|T_Void", tokens[pos + 1]):
                 if pos + 2 < len(tokens):
@@ -119,15 +121,15 @@ class DeclNode:
                         if pos + 3 < len(tokens):
                             if tokens[pos + 3] == '(':
                                 #Function declaration
-                                
+                                tabs += 3
                                 self.variablefunct = self.functionDecl()
-                                
+                                tabs -= 3
                                 return self.variablefunct
                             else:
                                 #Variable declaration
-                                
+                                tabs += 3
                                 self.variabledecl = self.variableDecl()
-                                
+                                tabs -= 3 
                                 return self.variabledecl
                         else:
                             pos += 2
@@ -144,25 +146,22 @@ class DeclNode:
         else:
             error_handle()
             
-
     def functionDecl(self):
         global tokens, pos, lines, tabs
         
         next_token()
 
         line = get_line()
-
-
-        fnDecl = [" "*get_spaces(line) + line + " " + "FnDecl: "]
+        fnDecl = [" "*get_spaces(line) + line + " "*tabs + "FnDecl: "]
         #Get line #, type of function, and identifier
         
-        
-        fnDecl.append(" "*3 + " " + "(return type) Type: " + re.findall(r"int|double|string|bool|void", lines[pos].split()[0])[0])
+        tabs += 3
+        fnDecl.append(" "*get_spaces() + " "*tabs + "(return type) Type: " + re.findall(r"int|double|string|bool|void", lines[pos].split()[0])[0])
         
         if tokens[pos + 1] == 'T_Identifier':
             next_token()
             line = get_line()
-            fnDecl.append(" "*get_spaces(line) + line + " " + "Identifier: " + lines[pos].split()[0])
+            fnDecl.append(" "*get_spaces(line) + line + " "*tabs + "Identifier: " + lines[pos].split()[0])
         else:
             next_token()
             error_handle()
@@ -180,12 +179,14 @@ class DeclNode:
             
         #Statement block
         if tokens[pos + 1] == '{':
-            fnDecl.append(" "*3 + " " + '(body) StmtBlock: ')
+            fnDecl.append(" "*get_spaces() + " "*tabs + '(body) StmtBlock: ')
+            tabs += 3
             fnDecl.append(StatementNode().stmtBlock())
+            tabs -= 3
         else:
             next_token()
             error_handle()
-            
+        tabs -= 3
         return fnDecl
 
     def variableDecl(self):
@@ -193,9 +194,10 @@ class DeclNode:
         
         var = []
         line = re.findall(r"line \d+ ",lines[pos + 1])[0].split()[-1]
-        var.append(" "*get_spaces(line) + line + " " + "VarDecl: ")
-
+        var.append(" "*get_spaces(line) + line + " "*tabs + "VarDecl: ")
+        tabs += 3
         var.append(self.variable())
+        tabs -=3
         if tokens[pos + 1] == ';':
             next_token()
             return var
@@ -210,12 +212,12 @@ class DeclNode:
         next_token()
         var = []
         
-        var.append(" "*3 + " " + "Type: " + re.findall(r"int|double|string|bool|void", lines[pos].split()[0])[0])
+        var.append(" "*get_spaces() + " "*tabs + "Type: " + re.findall(r"int|double|string|bool|void", lines[pos].split()[0])[0])
 
         if tokens[pos + 1] == 'T_Identifier':
             next_token()
             line = get_line()
-            var.append(" "*get_spaces(line) + line + " " + "Identifier: " + lines[pos].split()[0]) 
+            var.append(" "*get_spaces(line) + line + " "*tabs + "Identifier: " + lines[pos].split()[0]) 
         else:
             next_token() 
             error_handle()
@@ -225,27 +227,28 @@ class DeclNode:
     
     #List of variables seperated by comma
     def formals(self):
-        global tokens, pos, lines, tabs
+        global tokens, pos, tabs
         formals = []
         next_token()
         line = get_line()
-        formals.append(" "*get_spaces(line) + line + " " + '(formals) VarDecl: ')
-
+        formals.append(" "*get_spaces(line) + line + " "*tabs + '(formals) VarDecl: ')
+        tabs += 3
         formals.append(self.variable())
-
+        tabs -= 3
         while tokens[pos + 1] == ',':
             next_token()
             line = get_line()
-            formals.append(" "*get_spaces(line) + line + " " + '(formals) VarDecl: ')
+            formals.append(" "*get_spaces(line) + line + " "*tabs + '(formals) VarDecl: ')
+            tabs += 3
             formals.append(self.variable()) 
-        
+            tabs -= 3
         #Consume )
         if tokens[pos + 1] == ')':
             next_token()
         else:
             next_token()
             error_handle()
-                           
+                                   
         return formals
 
 class StatementNode:
@@ -255,7 +258,7 @@ class StatementNode:
         self.variablestmt = []
 
     def stmtBlock(self):
-        global tokens, pos, lines, tabs
+        global tokens, pos, tabs
 
         #Consume {
         next_token()
@@ -283,35 +286,45 @@ class StatementNode:
         return self.stmts
     
     def stmt(self):
-        global tokens, pos, lines, tabs
+        global tokens, pos, tabs
 
         stmt = []
 
         if tokens[pos + 1] == 'T_If':
-            stmt.append(" "*3 + " " + 'IfStmt: ')
+            stmt.append(" "*get_spaces() + " "*tabs + 'IfStmt: ')
+            tabs += 3
             stmt.append(self.ifStmt())
+            tabs -= 3
         elif tokens[pos + 1] == 'T_While':
-            stmt.append(" "*3 + " " + 'WhileStmt: ')
+            stmt.append(" "*get_spaces() + " "*tabs + 'WhileStmt: ')
+            tabs += 3
             stmt.append(self.whileStmt())
+            tabs -= 3
         elif tokens[pos + 1] == 'T_For':
-            stmt.append(" "*3 + " " + 'ForStmt: ')
+            stmt.append(" "*get_spaces() + " "*tabs + 'ForStmt: ')
+            tabs += 3
             stmt.append(self.forStmt())
+            tabs -= 3
         elif tokens[pos + 1] == 'T_Break':
             next_token()
-            stmt.append(" "*3 + " " + 'BreakStmt: ')
+            stmt.append(" "*get_spaces() + " "*tabs + 'BreakStmt: ')
+            tabs += 3
             if tokens[pos + 1] == ';':
                 next_token()
             else:
                 next_token()
                 error_handle()
+            tabs -= 3
         elif tokens[pos + 1] == 'T_Return':
             next_token() 
             line = get_line()
-            stmt.append(" "*get_spaces(line) + line + " " + 'ReturnStmt: ')
+            stmt.append(" "*get_spaces(line) + line + " "*tabs + 'ReturnStmt: ')
+            tabs += 3
             if tokens[pos + 1] == ';':
-                stmt.append(" "*3 + " " + 'Empty: ')
+                stmt.append(" "*get_spaces() + " "*tabs + 'Empty: ')
             else:
                 stmt.append(ExpressionNode().logicOr())
+            tabs -= 3
             if tokens[pos + 1] == ';':
                 next_token()
             else:
@@ -321,15 +334,18 @@ class StatementNode:
             #consume print token
             next_token()
             if tokens[pos + 1] == '(':
-                stmt.append(" "*3 + " " + 'PrintStmt: ')
+                stmt.append(" "*get_spaces() + " "*tabs + 'PrintStmt: ')
+                tabs += 3
                 stmt.append(self.printStmt())
+                tabs -= 3
             else:
                 next_token()
                 error_handle()
         elif tokens[pos + 1] == '{':
-            stmt.append(" "*3 + " " + '(body) StmtBlock: ')
-            
+            stmt.append(" "*get_spaces() + " "*tabs + '(body) StmtBlock: ')
+            tabs += 3
             stmt.append(StatementNode().stmtBlock())
+            tabs -= 3
         else:
             stmt = ExpressionNode().expBlock()
             if tokens[pos + 1] == ';':
@@ -341,7 +357,7 @@ class StatementNode:
         return stmt
                 
     def printStmt(self):
-        global tokens, pos, lines, tabs 
+        global tokens, pos, tabs 
         #consume (
         next_token()
         exprs = []
@@ -354,13 +370,13 @@ class StatementNode:
         line = get_line()
 
         if "Identifier" in x[0]:
-            exprs.append(" "*get_spaces(line) + line + " " + "(args) FieldAccess: ")
+            exprs.append(" "*get_spaces(line) + line + " "*tabs + "(args) FieldAccess: ")
             exprs.append(x)
         elif "StringConstant" in x[0]:
-            x[0] = " "*get_spaces(line) + line + " (args) " + x[0]
+            x[0] = " "*get_spaces(line) + line + " "*tabs + "(args) " + x[0]
             exprs.extend(x)           
         else:
-            x[0] = " "*get_spaces(line) + line + " (args) " + x[0].split()[-1]
+            x[0] = " "*get_spaces(line) + line + " "*tabs + "(args) " + x[0].split()[-1]
             exprs.extend(x)
 
         # Expressions inside Print(), continue if ,
@@ -370,13 +386,13 @@ class StatementNode:
             line = get_line()
 
             if "Identifier" in x[0]:
-                exprs.append(" "*get_spaces(line) + line + " " + "(args) FieldAccess: ")
+                exprs.append(" "*get_spaces(line) + line + " "*tabs + "(args) FieldAccess: ")
                 exprs.append(x)
             elif "StringConstant" in x[0]:
-                x[0] = " "*get_spaces(line) + line + " (args) " + x[0]
+                x[0] = " "*get_spaces(line) + line + " "*tabs + "(args) " + x[0]
                 exprs.extend(x)                        
             else:
-                x[0] = " "*get_spaces(line) + line + " (args) " + x[0]
+                x[0] = " "*get_spaces(line) + line + " "*tabs + "(args) " + x[0]
                 exprs.extend(x)
 
         #Consume )
@@ -394,7 +410,7 @@ class StatementNode:
         return exprs
 
     def ifStmt(self):
-        global tokens, lines, pos, tabs
+        global tokens, pos, tabs
 
         #consume if token
         next_token()
@@ -406,7 +422,7 @@ class StatementNode:
             next_token()
             x = ExpressionNode().logicOr()
             line = get_line()
-            x[0] = " "*get_spaces(line) + line + " " + "(test) " + x[0].split()[-1]
+            x[0] = " "*get_spaces(line) + line + " "*tabs + "(test) " + x[0].split()[-1]
             stmt.append(x)
 
             if tokens[pos + 1] == ')':
@@ -422,10 +438,10 @@ class StatementNode:
         x = self.stmt()
         line = get_line()
         if "Identifier" in x[0]:
-            stmt.append(" "*get_spaces(line) + line + " " + "(then) FieldAccess: ")
+            stmt.append(" "*get_spaces(line) + line + " "*tabs + "(then) FieldAccess: ")
             stmt.append(x)
         else:
-            x[0] = " "*get_spaces(line) + line + " (then) " + x[0].split()[-1]
+            x[0] = " "*get_spaces(line) + line + " "*tabs + "(then) " + x[0].split()[-1]
             stmt.extend(x)
 
         while tokens[pos + 1] == 'T_Else':
@@ -433,16 +449,16 @@ class StatementNode:
             x = self.stmt()
             line = get_line()
             if "Identifier" in x[0]:
-                stmt.append(" "*get_spaces(line) + line + " " + "(else) FieldAccess: ")
+                stmt.append(" "*get_spaces(line) + line + " "*tabs + "(else) FieldAccess: ")
                 stmt.append(x)
             else:
-                x[0] = " "*get_spaces(line) + line + " (else) " + x[0].split()[-1]
+                x[0] = " "*get_spaces(line) + line + " "*tabs +  "(else) " + x[0].split()[-1]
                 stmt.extend(x)
 
         return stmt
 
     def whileStmt(self):
-        global tokens, lines, pos, tabs
+        global tokens, pos, tabs
         stmt = []
         #consume while token
         next_token()
@@ -452,7 +468,7 @@ class StatementNode:
             next_token()
             line = get_line()
             x = ExpressionNode().logicOr()
-            x[0] = " "*get_spaces(line) + line + " " + "(test) " + x[0].split()[-1]
+            x[0] = " "*get_spaces(line) + line + " "*tabs + "(test) " + x[0].split()[-1]
             stmt.append(x)
             if tokens[pos + 1] == ')':
                 #consume )
@@ -470,7 +486,7 @@ class StatementNode:
         return stmt
 
     def forStmt(self):
-        global tokens, lines, pos, tabs
+        global tokens, pos, tabs
         stmt = []
         #consume for token
         next_token()
@@ -482,18 +498,18 @@ class StatementNode:
             #first expression may be empty
             if tokens[pos + 1] == ';':
                 line = get_line()
-                stmt.append(" "*3 + " " + "(init) Empty: ")
+                stmt.append(" "*get_spaces() + " "*tabs + "(init) Empty: ")
                 next_token()
             else:
                 x = ExpressionNode().logicOr()
                 line = get_line()
-                x[0] = " "*get_spaces(line) + line + " " + "(init) " + x[0].split()[-1]
+                x[0] = " "*get_spaces(line) + line + " "*tabs + "(init) " + x[0].split()[-1]
                 stmt.append(x)
                              
             #second expression is enforced
             x = ExpressionNode().logicOr()
             line = get_line()
-            x[0] = " "*get_spaces(line) + line + " " + "(test) " + x[0].split()[-1]
+            x[0] = " "*get_spaces(line) + line + " "*tabs + "(test) " + x[0].split()[-1]
             stmt.append(x)
 
             #enforce ; after expression
@@ -506,12 +522,12 @@ class StatementNode:
             #third expression is optional
             if tokens[pos + 1] == ';':
                 line = get_line()
-                stmt.append(" "*get_spaces(line) + line + " " + "(step) Empty: ")
+                stmt.append(" "*get_spaces(line) + line + " "*tabs + "(step) Empty: ")
                 next_token()
             else:
                 x = ExpressionNode().logicOr()
                 line = get_line()
-                x[0] = " "*get_spaces(line) + line + " " + "(step) " + x[0].split()[-1]
+                x[0] = " "*get_spaces(line) + line + " "*tabs + "(step) " + x[0].split()[-1]
                 stmt.append(x)
             
             if tokens[pos + 1] == ')':
@@ -543,17 +559,12 @@ class ExpressionNode:
                 if tokens[pos + 2] == '=':
                     expr = self.assign()
                 elif tokens[pos + 2] == '(':
-                    #consume ident
-                    next_token()
-                    line = get_line()
-                    expr.append(" "*get_spaces(line) + line + " " + 'Call: ')
-                    expr.append(" "*get_spaces(line) + line + " " + 'Identifier: ' + lines[pos].split()[0])
-                    expr.append(self.actuals())
+                    expr = self.call()
                 else:
                     #consume ident
                     next_token()
                     line = get_line()
-                    expr.append(" "*get_spaces(line) + line + " " + 'Identifier: ' + lines[pos].split()[0])
+                    expr.append(" "*get_spaces(line) + line + " "*tabs + 'Identifier: ' + lines[pos].split()[0])
             elif tokens[pos + 1] == '(':
                 expr.append(self.parenthesis())
             elif re.match(r"\-|\!",tokens[pos + 1]):
@@ -581,16 +592,28 @@ class ExpressionNode:
                 #consume readinteger, (, )
                 line = get_line()
                 pos += 3
-                expr.append(" "*get_spaces(line) + line + " " + 'ReadIntegerExpr: ')
+                expr.append(" "*get_spaces(line) + line + " "*tabs + 'ReadIntegerExpr: ')
             else:
                 next_token()
                 error_handle()
         return expr
 
-    
+    def call(self):
+        global tokens, pos, tabs
+        #consume ident
+        next_token()
+        expr = []
+
+        line = get_line()
+        expr.append(" "*get_spaces(line) + line + " "*tabs + 'Call: ')
+        tabs += 3
+        expr.append(" "*get_spaces(line) + line + " "*tabs + 'Identifier: ' + lines[pos].split()[0])
+        expr.append(self.actuals())
+        tabs -= 3
+        return expr
         
     def parenthesis(self):
-        global tokens, pos, lines, tabs
+        global tokens, pos, tabs
         #consume (
         next_token() 
         expr = []
@@ -611,7 +634,7 @@ class ExpressionNode:
         return expr
     
     def actuals(self):
-        global tokens, pos, lines, tabs
+        global tokens, pos, tabs
         actuals = []
         #consume (
         next_token()
@@ -622,7 +645,7 @@ class ExpressionNode:
 
         x = self.logicOr()
         line = get_line()
-        x[0] = " "*get_spaces(line) + line + " " + "(actuals) " + x[0].split()[-1]
+        x[0] = " "*get_spaces(line) + line + " "*tabs + "(actuals) " + x[0].split()[-1]
         
         actuals.append(x)
 
@@ -630,7 +653,7 @@ class ExpressionNode:
             next_token()
             x = self.logicOr()
             line = get_line()
-            x[0] = " "*get_spaces(line) + line + " " + "(actuals) " + x[0].split()[-1]
+            x[0] = " "*get_spaces(line) + line + " "*tabs + "(actuals) " + x[0].split()[-1]
             actuals.append(x)
         
         #Consume )
@@ -643,20 +666,20 @@ class ExpressionNode:
         return actuals
     
     def unary(self):
-        global tokens, pos, lines, tabs
+        global tokens, pos, tabs
         expr = []
 
         if re.match(r"\-|\!",tokens[pos + 1]):
             next_token()
             line = get_line()
-            x = [" "*get_spaces(line) + line + " " + "LogicalExpr: "]
-            expr.append(" "*get_spaces(line) + line + " " + 'Operator: ' + tokens[pos])
+            x = [" "*get_spaces(line) + line + " "*tabs + "LogicalExpr: "]
+            expr.append(" "*get_spaces(line) + line + " "*tabs + 'Operator: ' + tokens[pos])
             y = self.expBlock()
             if "Identifier" in y[0]: 
-                expr.append(" "*get_spaces(line) + line + " " + "FieldAccess: ")
+                expr.append(" "*get_spaces(line) + line + " "*tabs + "FieldAccess: ")
                 expr.extend(y)
             elif "Constant" in y[0]:
-                y[0] = " "*get_spaces(line) + line + " " + y[0]
+                y[0] = " "*get_spaces(line) + line + " "*tabs + y[0]
                 expr.extend(y)
             else:
                 expr.extend(y)
@@ -665,10 +688,10 @@ class ExpressionNode:
             line = get_line()
             x = self.expBlock()
             if "Identifier" in x[0]: 
-                expr.append(" "*get_spaces(line) + line + " " + "FieldAccess: ")
+                expr.append(" "*get_spaces(line) + line + " "*tabs + "FieldAccess: ")
                 expr.extend(x)
             elif "Constant" in x[0]:
-                x[0] = " "*get_spaces(line) + line + " " + x[0]
+                x[0] = " "*get_spaces(line) + line + " "*tabs + x[0]
                 expr.extend(x)
             else:
                 expr.extend(x)
@@ -676,16 +699,16 @@ class ExpressionNode:
         return expr
 
     def multiplication(self):
-        global tokens, pos, lines, tabs
+        global tokens, pos, tabs
 
         expr = []
         expr = self.unary()
 
         while re.match(r"\*|\/|\%", tokens[pos + 1]):
             line = get_line()
-            x = [" "*get_spaces(line) + line + " " + "ArithmeticExpr: "]
+            x = [" "*get_spaces(line) + line + " "*tabs + "ArithmeticExpr: "]
             next_token()
-            expr.append(" "*get_spaces(line) + line + " " + 'Operator: ' + re.findall(r"\*|\/|\%",tokens[pos])[0])
+            expr.append(" "*get_spaces(line) + line + " "*tabs + 'Operator: ' + re.findall(r"\*|\/|\%",tokens[pos])[0])
             expr.extend(self.unary())
             expr = x + expr
 
@@ -701,8 +724,8 @@ class ExpressionNode:
             #consume +/-
             next_token()
             line = get_line()
-            x = [" "*get_spaces(line) + line + " " + "ArithmeticExpr: "]
-            expr.append(" "*get_spaces(line) + line + " " + 'Operator: ' + re.findall(r"\+|\-",tokens[pos])[0])
+            x = [" "*get_spaces(line) + line + " "*tabs + "ArithmeticExpr: "]
+            expr.append(" "*get_spaces(line) + line + " "*tabs + 'Operator: ' + re.findall(r"\+|\-",tokens[pos])[0])
             expr.extend(self.multiplication())
 
             expr = x + expr
@@ -718,8 +741,8 @@ class ExpressionNode:
         if re.match(r"\<|\>|T_LessEqual|T_GreaterEqual", tokens[pos + 1]):
             next_token()
             line = get_line()
-            x = [" "*get_spaces(line) + line + " " + "RelationalExpr: "]
-            expr.append(" "*get_spaces(line) + line + " " + 'Operator: ' + lines[pos].split()[0])
+            x = [" "*get_spaces(line) + line + " "*tabs + "RelationalExpr: "]
+            expr.append(" "*get_spaces(line) + line + " "*tabs + 'Operator: ' + lines[pos].split()[0])
             expr.extend(self.addition()) 
             expr = x + expr
 
@@ -734,8 +757,8 @@ class ExpressionNode:
         if re.match(r"T_Equal|T_NotEqual", tokens[pos + 1]):
             next_token()
             line = get_line()
-            x = [" "*get_spaces(line) + line + " " + "EqualityExpr: "]
-            expr.append(" "*get_spaces(line) + line + " " + 'Operator: ' + lines[pos].split()[0])
+            x = [" "*get_spaces(line) + line + " "*tabs + "EqualityExpr: "]
+            expr.append(" "*get_spaces(line) + line + " "*tabs + 'Operator: ' + lines[pos].split()[0])
             expr.extend(self.relational())
             expr = x + expr
 
@@ -751,8 +774,8 @@ class ExpressionNode:
             #consume &&
             next_token()
             line = get_line()
-            x = [" "*get_spaces(line) + line + " " + "LogicalExpr: "]
-            expr.append(" "*get_spaces(line) + line + " " + 'Operator: ' + lines[pos].split()[0])
+            x = [" "*get_spaces(line) + line + " "*tabs + "LogicalExpr: "]
+            expr.append(" "*get_spaces(line) + line + " "*tabs + 'Operator: ' + lines[pos].split()[0])
             expr.extend(self.equality())
             expr = x + expr
             
@@ -768,8 +791,8 @@ class ExpressionNode:
             #consume ||
             next_token()
             line = get_line()
-            x = [" "*get_spaces(line) + line + " " + "LogicalExpr: "]
-            expr.append(" "*get_spaces(line) + line + " " + 'Operator: ' + lines[pos].split()[0])
+            x = [" "*get_spaces(line) + line + " "*tabs + "LogicalExpr: "]
+            expr.append(" "*get_spaces(line) + line + " "*tabs + 'Operator: ' + lines[pos].split()[0])
             expr.extend(self.logicAnd())
             expr = x + expr
 
@@ -782,11 +805,11 @@ class ExpressionNode:
         #consume identifier
         next_token()
         line = get_line()
-        expr = [" "*get_spaces(line) + line + " " + "AssignExpr: "]
+        expr = [" "*get_spaces(line) + line + " "*tabs + "AssignExpr: "]
         
-        expr.append(" "*get_spaces(line) + line + " " + "FieldAccess: ")
-        expr.append(" "*get_spaces(line) + line + " " + 'Identifier: ' + lines[pos].split()[0])
-        expr.append(" "*get_spaces(line) + line + " " + 'Operator: ' + re.findall(r"\=",tokens[pos + 1])[0])
+        expr.append(" "*get_spaces(line) + line + " "*tabs + "FieldAccess: ")
+        expr.append(" "*get_spaces(line) + line + " "*tabs + 'Identifier: ' + lines[pos].split()[0])
+        expr.append(" "*get_spaces(line) + line + " "*tabs + 'Operator: ' + re.findall(r"\=",tokens[pos + 1])[0])
 
         #consume =
         next_token()
