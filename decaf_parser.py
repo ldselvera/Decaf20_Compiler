@@ -3,7 +3,7 @@ import sys
 
 lines   = []
 tokens  = []
-original = []
+original= []
 pos     = -1
 tabs    = 0
 
@@ -323,7 +323,7 @@ class StatementNode:
             if tokens[pos + 1] == ';':
                 stmt.append(" "*get_spaces() + " "*tabs + 'Empty: ')
             else:
-                stmt.append(ExpressionNode().logicOr())
+                stmt.append(ExpressionNode().assign())
             tabs -= 3
             if tokens[pos + 1] == ';':
                 next_token()
@@ -341,13 +341,14 @@ class StatementNode:
             else:
                 next_token()
                 error_handle()
+
         elif tokens[pos + 1] == '{':
             stmt.append(" "*get_spaces() + " "*tabs + '(body) StmtBlock: ')
             tabs += 3
             stmt.append(StatementNode().stmtBlock())
             tabs -= 3
         else:
-            stmt = ExpressionNode().expBlock()
+            stmt = ExpressionNode().assign()
             if tokens[pos + 1] == ';':
                 next_token()
             else:
@@ -364,35 +365,35 @@ class StatementNode:
 
         if tokens[pos + 1] == ')':
             next_token()
-            return 
+            error_handle()
 
-        x = ExpressionNode().expBlock()
+        x = ExpressionNode().assign()
         line = get_line()
-
+ 
         if "Identifier" in x[0]:
             exprs.append(" "*get_spaces(line) + line + " "*tabs + "(args) FieldAccess: ")
             exprs.append(x)
         elif "StringConstant" in x[0]:
-            x[0] = " "*get_spaces(line) + line + " "*tabs + "(args) " + x[0]
+            x[0] = " "*get_spaces(line) + line + " "*tabs + "(args) " + x[0].split("   ")[-1]
             exprs.extend(x)           
         else:
-            x[0] = " "*get_spaces(line) + line + " "*tabs + "(args) " + x[0].split()[-1]
+            x[0] = " "*get_spaces(line) + line + " "*tabs + "(args) " + x[0].split()[-1] + " "
             exprs.extend(x)
 
         # Expressions inside Print(), continue if ,
         while tokens[pos + 1] == ',':
             next_token()
-            x = ExpressionNode().expBlock()
+            x = ExpressionNode().assign()
             line = get_line()
 
             if "Identifier" in x[0]:
                 exprs.append(" "*get_spaces(line) + line + " "*tabs + "(args) FieldAccess: ")
                 exprs.append(x)
             elif "StringConstant" in x[0]:
-                x[0] = " "*get_spaces(line) + line + " "*tabs + "(args) " + x[0]
-                exprs.extend(x)                        
+                x[0] = " "*get_spaces(line) + line + " "*tabs + "(args) " + x[0].split("   ")[-1]
+                exprs.extend(x)           
             else:
-                x[0] = " "*get_spaces(line) + line + " "*tabs + "(args) " + x[0]
+                x[0] = " "*get_spaces(line) + line + " "*tabs + "(args) " + x[0].split()[-1] + " "
                 exprs.extend(x)
 
         #Consume )
@@ -420,9 +421,9 @@ class StatementNode:
         if tokens[pos + 1] == '(':
             #consume (
             next_token()
-            x = ExpressionNode().logicOr()
+            x = ExpressionNode().assign()
             line = get_line()
-            x[0] = " "*get_spaces(line) + line + " "*tabs + "(test) " + x[0].split()[-1]
+            x[0] = " "*get_spaces(line) + line + " "*tabs + "(test) " + x[0].split()[-1] + " "
             stmt.append(x)
 
             if tokens[pos + 1] == ')':
@@ -441,7 +442,7 @@ class StatementNode:
             stmt.append(" "*get_spaces(line) + line + " "*tabs + "(then) FieldAccess: ")
             stmt.append(x)
         else:
-            x[0] = " "*get_spaces(line) + line + " "*tabs + "(then) " + x[0].split()[-1]
+            x[0] = " "*get_spaces(line) + line + " "*tabs + "(then) " + x[0].split()[-1] + " "
             stmt.extend(x)
 
         while tokens[pos + 1] == 'T_Else':
@@ -452,7 +453,7 @@ class StatementNode:
                 stmt.append(" "*get_spaces(line) + line + " "*tabs + "(else) FieldAccess: ")
                 stmt.append(x)
             else:
-                x[0] = " "*get_spaces(line) + line + " "*tabs +  "(else) " + x[0].split()[-1]
+                x[0] = " "*get_spaces(line) + line + " "*tabs +  "(else) " + x[0].split()[-1] + " "
                 stmt.extend(x)
 
         return stmt
@@ -467,8 +468,8 @@ class StatementNode:
             #consume (
             next_token()
             line = get_line()
-            x = ExpressionNode().logicOr()
-            x[0] = " "*get_spaces(line) + line + " "*tabs + "(test) " + x[0].split()[-1]
+            x = ExpressionNode().assign()
+            x[0] = " "*get_spaces(line) + line + " "*tabs + "(test) " + x[0].split()[-1] + " "
             stmt.append(x)
             if tokens[pos + 1] == ')':
                 #consume )
@@ -501,15 +502,15 @@ class StatementNode:
                 stmt.append(" "*get_spaces() + " "*tabs + "(init) Empty: ")
                 next_token()
             else:
-                x = ExpressionNode().logicOr()
+                x = ExpressionNode().assign()
                 line = get_line()
-                x[0] = " "*get_spaces(line) + line + " "*tabs + "(init) " + x[0].split()[-1]
+                x[0] = " "*get_spaces(line) + line + " "*tabs + "(init) " + x[0].split()[-1] + " "
                 stmt.append(x)
                              
             #second expression is enforced
-            x = ExpressionNode().logicOr()
+            x = ExpressionNode().assign()
             line = get_line()
-            x[0] = " "*get_spaces(line) + line + " "*tabs + "(test) " + x[0].split()[-1]
+            x[0] = " "*get_spaces(line) + line + " "*tabs + "(test) " + x[0].split()[-1] + " "
             stmt.append(x)
 
             #enforce ; after expression
@@ -525,9 +526,9 @@ class StatementNode:
                 stmt.append(" "*get_spaces(line) + line + " "*tabs + "(step) Empty: ")
                 next_token()
             else:
-                x = ExpressionNode().logicOr()
+                x = ExpressionNode().assign()
                 line = get_line()
-                x[0] = " "*get_spaces(line) + line + " "*tabs + "(step) " + x[0].split()[-1]
+                x[0] = " "*get_spaces(line) + line + " "*tabs + "(step) " + x[0].split()[-1] + " "
                 stmt.append(x)
             
             if tokens[pos + 1] == ')':
@@ -555,22 +556,7 @@ class ExpressionNode:
         
         expr = []
         if tokens[pos + 1]:
-            if tokens[pos + 1] == 'T_Identifier':
-                if tokens[pos + 2] == '=':
-                    expr = self.assign()
-                elif tokens[pos + 2] == '(':
-                    expr = self.call()
-                else:
-                    #consume ident
-                    next_token()
-                    line = get_line()
-                    expr.append(" "*get_spaces(line) + line + " "*tabs + 'Identifier: ' + lines[pos].split()[0])
-            elif tokens[pos + 1] == '(':
-                expr.append(self.parenthesis())
-            elif re.match(r"\-|\!",tokens[pos + 1]):
-                expr.append('Unary: ')
-                expr.append(self.unary())
-            elif re.match(r"T_IntConstant|T_DoubleConstant|T_StringConstant|T_BoolConstant", tokens[pos + 1]):
+            if re.match(r"T_IntConstant|T_DoubleConstant|T_StringConstant|T_BoolConstant", tokens[pos + 1]):
                 #consume constant token
                 next_token()
                 line = get_line()
@@ -578,24 +564,48 @@ class ExpressionNode:
 
                 if tokens[pos] == 'T_StringConstant':
                     value = name + ': ' + '"' + lines[pos].split('"')[1] + '"'
+                    value = " "*get_spaces(line) + line + " "*(tabs) + value
                     expr.append(value)
+
                 elif tokens[pos] == 'T_DoubleConstant':
                     value = name + ": " + lines[pos].split()[0]
+                    
                     if (float(value.split()[-1])).is_integer():
                         new_int = int(float(value.split()[-1]))
                         value = value.split()[0] + " " + str(new_int)
+
+                    value = " "*get_spaces(line) + line + " "*(tabs) + value
                     expr.append(value)
                 else:
                     value = name + ": " + lines[pos].split()[0]
-                    expr.append(value)
+                    value = " "*get_spaces(line) + line + " "*(tabs) + value
+                    expr.append(value)  
+
+            elif tokens[pos + 1] == 'T_Identifier':              
+                if tokens[pos + 2] == '(':
+                    expr = self.call()
+                else:
+                    #consume ident
+                    next_token()
+                    line = get_line()
+                    expr.append(" "*get_spaces(line) + line + " "*tabs + "FieldAccess: ")
+                    expr.append(" "*get_spaces(line) + line + " "*tabs + 'Identifier: ' + lines[pos].split()[0])
+            elif tokens[pos + 1] == '(':
+                expr.append(self.parenthesis())
             elif tokens[pos + 1] == 'T_ReadInteger':
                 #consume readinteger, (, )
                 line = get_line()
                 pos += 3
-                expr.append(" "*get_spaces(line) + line + " "*tabs + 'ReadIntegerExpr: ')
+                expr.append(" "*get_spaces(line) + line + " "*(tabs) + 'ReadIntegerExpr: ')
+            elif tokens[pos + 1] == 'T_ReadLine':
+                #consume readinteger, (, )
+                line = get_line()
+                pos += 3
+                expr.append(" "*get_spaces(line) + line + " "*(tabs) + 'ReadLine: ')
             else:
                 next_token()
                 error_handle()
+
         return expr
 
     def call(self):
@@ -605,11 +615,22 @@ class ExpressionNode:
         expr = []
 
         line = get_line()
-        expr.append(" "*get_spaces(line) + line + " "*tabs + 'Call: ')
-        tabs += 3
+        expr.append(" "*get_spaces(line) + line + " "*tabs + "Call: ")
         expr.append(" "*get_spaces(line) + line + " "*tabs + 'Identifier: ' + lines[pos].split()[0])
-        expr.append(self.actuals())
-        tabs -= 3
+
+        if tokens[pos + 1] == '(':
+            expr.append(self.actuals())
+        else:
+            next_token()
+            error_handle()
+
+        #Consume )
+        if tokens[pos + 1] == ')':
+            next_token()
+        else:
+            next_token()
+            error_handle()
+
         return expr
         
     def parenthesis(self):
@@ -623,7 +644,7 @@ class ExpressionNode:
             next_token()
             return 
         else:
-            expr = self.logicOr()
+            expr = self.assign()
 
         if tokens[pos + 1] == ')':
             next_token()
@@ -639,29 +660,22 @@ class ExpressionNode:
         #consume (
         next_token()
 
+        #Consume )
         if tokens[pos + 1] == ')':
-            next_token()
-            return 
+            pos += 1
+            return
 
-        x = self.logicOr()
+        x = self.assign()
         line = get_line()
-        x[0] = " "*get_spaces(line) + line + " "*tabs + "(actuals) " + x[0].split()[-1]
-        
+        x[0] = " "*get_spaces(line) + line + " "*tabs + "(actuals) " + x[0].split()[-1] + " "
         actuals.append(x)
 
         while tokens[pos + 1] == ',':
             next_token()
-            x = self.logicOr()
+            x = self.assign()
             line = get_line()
-            x[0] = " "*get_spaces(line) + line + " "*tabs + "(actuals) " + x[0].split()[-1]
+            x[0] = " "*get_spaces(line) + line + " "*tabs + "(actuals) " + x[0].split()[-1] + " "
             actuals.append(x)
-        
-        #Consume )
-        if tokens[pos + 1] == ')':
-            next_token()
-        else:
-            next_token()
-            error_handle()
         
         return actuals
     
@@ -672,129 +686,102 @@ class ExpressionNode:
         if re.match(r"\-|\!",tokens[pos + 1]):
             next_token()
             line = get_line()
-            x = [" "*get_spaces(line) + line + " "*tabs + "LogicalExpr: "]
-            expr.append(" "*get_spaces(line) + line + " "*tabs + 'Operator: ' + tokens[pos])
+            expr = [" "*get_spaces(line) + line + " "*(tabs) + "LogicalExpr: "] + expr
+            expr.append(" "*get_spaces(line) + line + " "*tabs + 'Operator: ' + re.findall(r"\-|\!",tokens[pos])[0])
             y = self.expBlock()
-            if "Identifier" in y[0]: 
-                expr.append(" "*get_spaces(line) + line + " "*tabs + "FieldAccess: ")
-                expr.extend(y)
-            elif "Constant" in y[0]:
-                y[0] = " "*get_spaces(line) + line + " "*tabs + y[0]
-                expr.extend(y)
-            else:
-                expr.extend(y)
-            expr = x + expr
+            expr.extend(y)
+
         else:
             line = get_line()
             x = self.expBlock()
-            if "Identifier" in x[0]: 
-                expr.append(" "*get_spaces(line) + line + " "*tabs + "FieldAccess: ")
-                expr.extend(x)
-            elif "Constant" in x[0]:
-                x[0] = " "*get_spaces(line) + line + " "*tabs + x[0]
-                expr.extend(x)
-            else:
-                expr.extend(x)
+            expr.extend(x)
 
         return expr
 
     def multiplication(self):
         global tokens, pos, tabs
 
-        expr = []
         expr = self.unary()
 
         while re.match(r"\*|\/|\%", tokens[pos + 1]):
             line = get_line()
-            x = [" "*get_spaces(line) + line + " "*tabs + "ArithmeticExpr: "]
+            expr = [" "*get_spaces(line) + line + " "*(tabs) + "ArithmeticExpr: "] + expr
             next_token()
             expr.append(" "*get_spaces(line) + line + " "*tabs + 'Operator: ' + re.findall(r"\*|\/|\%",tokens[pos])[0])
             expr.extend(self.unary())
-            expr = x + expr
 
         return expr
         
     def addition(self):
         global tokens, pos, lines, tabs
 
-        expr = []
         expr = self.multiplication()
 
         while re.match(r"\+|\-", tokens[pos + 1]):
             #consume +/-
             next_token()
             line = get_line()
-            x = [" "*get_spaces(line) + line + " "*tabs + "ArithmeticExpr: "]
+            expr = [" "*get_spaces(line) + line + " "*(tabs) + "ArithmeticExpr: "] + expr
             expr.append(" "*get_spaces(line) + line + " "*tabs + 'Operator: ' + re.findall(r"\+|\-",tokens[pos])[0])
             expr.extend(self.multiplication())
-
-            expr = x + expr
 
         return expr
     
     def relational(self):
         global tokens, pos, lines, tabs
-        
-        #expr = []
+
         expr = self.addition()
 
         if re.match(r"\<|\>|T_LessEqual|T_GreaterEqual", tokens[pos + 1]):
             next_token()
             line = get_line()
-            x = [" "*get_spaces(line) + line + " "*tabs + "RelationalExpr: "]
+            expr = [" "*get_spaces(line) + line + " "*(tabs) + "RelationalExpr: "] + expr
             expr.append(" "*get_spaces(line) + line + " "*tabs + 'Operator: ' + lines[pos].split()[0])
             expr.extend(self.addition()) 
-            expr = x + expr
 
         return expr
 
     def equality(self):
         global tokens, pos, lines, tabs
-        
-        #expr = []
+
         expr = self.relational()
         
         if re.match(r"T_Equal|T_NotEqual", tokens[pos + 1]):
             next_token()
             line = get_line()
-            x = [" "*get_spaces(line) + line + " "*tabs + "EqualityExpr: "]
+            expr = [" "*get_spaces(line) + line + " "*(tabs) + "EqualityExpr: "] + expr
             expr.append(" "*get_spaces(line) + line + " "*tabs + 'Operator: ' + lines[pos].split()[0])
             expr.extend(self.relational())
-            expr = x + expr
 
         return expr
     
     def logicAnd(self):
         global tokens, pos, lines, tabs
 
-        #expr = []
         expr = self.equality()
         
         while re.match(r"T_And", tokens[pos + 1]):
             #consume &&
             next_token()
             line = get_line()
-            x = [" "*get_spaces(line) + line + " "*tabs + "LogicalExpr: "]
+            expr = [" "*get_spaces(line) + line + " "*(tabs) + "LogicalExpr: "] + expr
             expr.append(" "*get_spaces(line) + line + " "*tabs + 'Operator: ' + lines[pos].split()[0])
             expr.extend(self.equality())
-            expr = x + expr
             
         return expr
     
     def logicOr(self):
         global tokens, pos, lines, tabs
-        
-        #expr = []
+
         expr = self.logicAnd()
 
         while re.match(r"T_Or", tokens[pos + 1]):
             #consume ||
             next_token()
             line = get_line()
-            x = [" "*get_spaces(line) + line + " "*tabs + "LogicalExpr: "]
+            expr = [" "*get_spaces(line) + line + " "*(tabs) + "LogicalExpr: "] + expr
             expr.append(" "*get_spaces(line) + line + " "*tabs + 'Operator: ' + lines[pos].split()[0])
             expr.extend(self.logicAnd())
-            expr = x + expr
 
         return expr
 
@@ -802,17 +789,18 @@ class ExpressionNode:
         global tokens, pos, lines, tabs
         expr = []
 
-        #consume identifier
-        next_token()
-        line = get_line()
-        expr = [" "*get_spaces(line) + line + " "*tabs + "AssignExpr: "]
-        
-        expr.append(" "*get_spaces(line) + line + " "*tabs + "FieldAccess: ")
-        expr.append(" "*get_spaces(line) + line + " "*tabs + 'Identifier: ' + lines[pos].split()[0])
-        expr.append(" "*get_spaces(line) + line + " "*tabs + 'Operator: ' + re.findall(r"\=",tokens[pos + 1])[0])
+        if tokens[pos + 1] == 'T_Identifier':
+            if tokens[pos + 2] == '=':
+                #consume identifier
+                next_token()
+                line = get_line()
+                expr = [" "*get_spaces(line) + line + " "*tabs + "AssignExpr: "]
+                expr.append(" "*get_spaces(line) + line + " "*tabs + "FieldAccess: ")
+                expr.append(" "*get_spaces(line) + line + " "*tabs + 'Identifier: ' + lines[pos].split()[0])
+                expr.append(" "*get_spaces(line) + line + " "*tabs + 'Operator: ' + re.findall(r"\=",tokens[pos + 1])[0])
+                #consume =
+                next_token()
 
-        #consume =
-        next_token()
         expr.extend(self.logicOr())
         
         return expr
